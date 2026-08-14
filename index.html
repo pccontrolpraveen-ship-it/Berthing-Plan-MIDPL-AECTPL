@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PORTVISION 3D — MIDPL Kattupalli</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- SPLASH -->
+<div class="screen active" id="splash">
+  <div class="logoMark">⚓</div>
+  <h1>PORTVISION</h1><div class="sub3d">3 D</div>
+  <p>MIDPL — KATTUPALLI TERMINAL</p>
+  <div class="splashBar"><i></i></div>
+</div>
+
+<!-- LOGIN -->
+<div class="screen" id="login">
+  <div class="authCard">
+    <h2>Welcome to PORTVISION 3D</h2>
+    <div class="hint">Select your role and sign in with your mobile number</div>
+    <div class="roleRow" id="roleRow">
+      <button class="roleCard" data-role="Vessel Planner"><div class="ric">🧭</div><div class="rlb">Vessel Planner</div></button>
+      <button class="roleCard" data-role="Manager"><div class="ric">📊</div><div class="rlb">Manager</div></button>
+      <button class="roleCard" data-role="Admin"><div class="ric">🛡️</div><div class="rlb">Admin</div></button>
+    </div>
+    <div class="fld"><label>Mobile Number</label><input id="mobile" maxlength="10" inputmode="numeric" placeholder="10-digit mobile number"></div>
+    <button class="primary" id="sendOtp" disabled>Send OTP</button>
+  </div>
+</div>
+
+<!-- OTP -->
+<div class="screen" id="otp">
+  <div class="authCard">
+    <h2>Verify OTP</h2>
+    <div class="hint" id="otpHint">Enter the 6-digit code sent to your mobile</div>
+    <div class="demoTag">Demo mode — use OTP <b>123456</b></div>
+    <div class="otpRow" id="otpRow">
+      <input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric">
+      <input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric"><input maxlength="1" inputmode="numeric">
+    </div>
+    <button class="primary" id="verifyOtp">Verify &amp; Enter</button>
+    <button class="linkBtn" id="backLogin">← Change role / number</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div class="screen" id="app">
+  <div class="sidebar">
+    <div class="sbBrand"><b>PORTVISION</b><span>3 D</span></div>
+    <div class="nav" id="navRow"></div>
+    <div class="sbUser"><b id="uRole"></b><span id="uMob"></span><button id="logout">Log out</button></div>
+  </div>
+  <div class="main">
+    <div class="topbar">
+      <span class="tbadge" style="padding:0;display:inline-flex;overflow:hidden">
+        <button class="pbtn on" data-port="KTP" title="Operate MIDPL — Kattupalli">MIDPL — Kattupalli</button>
+        <button class="pbtn" data-port="ENN" title="Operate AECTPL — Ennore">AECTPL — Ennore</button>
+      </span>
+      <h3 id="viewTitle">Dashboard</h3>
+      <span class="tbChip" id="tbDone">🚢 Total vessels handled: 0</span>
+      <span class="tbChip" id="dbBadge" style="cursor:help">💾 Standalone</span>
+      <button class="bell" id="bellBtn">🔔<span class="dot" id="bellDot" style="display:none">0</span></button>
+    </div>
+    <div class="content" id="content"></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modalWrap"><div class="modal" id="modalBox"></div></div>
+
+<!-- SAIL OVERLAY -->
+<div id="sailOverlay">
+  <h2 id="sailName">VESSEL SAILING OUT</h2><p>Berth released · Cranes released · Records updated</p>
+  <div class="shipAnim"><svg viewBox="0 0 200 90"><path d="M10 60 L40 60 L48 75 L165 75 L190 60 L190 58 L10 58 Z" fill="#E8EDF5"/><rect x="70" y="30" width="60" height="28" fill="#2E5D9F"/><rect x="78" y="18" width="18" height="12" fill="#7FD1C8"/><rect x="52" y="44" width="120" height="14" fill="#B33A3A"/><circle cx="30" cy="83" r="4" fill="rgba(255,255,255,.5)"/><circle cx="60" cy="85" r="3" fill="rgba(255,255,255,.4)"/></svg></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

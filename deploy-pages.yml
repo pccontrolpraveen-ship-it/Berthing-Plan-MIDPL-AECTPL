@@ -1,0 +1,46 @@
+# Publishes the PORTVISION 3D prototype (index.html + styles.css + app.js)
+# to GitHub Pages. No build step — the application is static.
+#
+# Enable once in: Settings → Pages → Source: GitHub Actions
+# NOTE: Pages sites are publicly reachable even from a private repository.
+#       Do not enable unless a public demo URL has been cleared.
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax check application script
+        run: node --check app.js
+
+      - name: Stage the static site
+        run: |
+          mkdir -p _site
+          cp index.html styles.css app.js _site/
+          cp -r docs/screenshots _site/screenshots || true
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

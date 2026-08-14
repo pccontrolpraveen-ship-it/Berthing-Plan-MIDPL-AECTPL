@@ -1,0 +1,37 @@
+# Runs the Playwright regression suite on every push and pull request.
+name: Regression tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Syntax check
+        run: node --check app.js
+
+      - name: Install Playwright
+        run: |
+          npm install -D playwright
+          npx playwright install --with-deps chromium
+
+      - name: Run regression suite
+        run: node tests/test_app.js | tee result.txt
+
+      - name: Fail if the suite reported errors
+        run: |
+          if grep -q "ERRORS: none" result.txt; then
+            echo "All checks passed."
+          else
+            echo "Regression suite reported errors:"; tail -5 result.txt; exit 1
+          fi

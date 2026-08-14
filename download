@@ -1,0 +1,40 @@
+# ── Secrets — never commit ────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+secrets/
+
+# ── Dependencies & build output ───────────────────────────
+node_modules/
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# ── Test artefacts ────────────────────────────────────────
+shots/
+test-results/
+playwright-report/
+coverage/
+
+# ── Operational data (commercially sensitive) ─────────────
+# Vessel schedules, line/agent documents and exports do not belong in Git
+*.xlsx
+*.xls
+*.csv
+!docs/**/*.csv
+data/
+exports/
+
+# ── Editor & OS noise ─────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
