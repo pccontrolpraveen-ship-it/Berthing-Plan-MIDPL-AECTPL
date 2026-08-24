@@ -23,7 +23,7 @@ node --check app.js          # syntax — catches the expensive mistakes
 node tests/test_app.js       # must end with: ERRORS: none
 ```
 
-Then open `index.html` in Chrome or Edge and confirm the screens you touched
+Then open `www/index.html` in Chrome or Edge and confirm the screens you touched
 still look right. If the change touched the 3D twin, walk the manual
 checklist in `docs/TESTING.md`.
 

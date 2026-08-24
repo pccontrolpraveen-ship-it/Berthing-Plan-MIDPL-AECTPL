@@ -113,7 +113,7 @@ Crane selection inside berth assignment, shown only for Container and Break-Bulk
 Container vessels: total discharge, total loading, reefer, ODC, one-door-open and hazardous containers. Liquid vessels: CBFS, CPO, Bitumen. Bulk: Soda Ash, Gypsum, Limestone, River Sand. Break-Bulk: Steel Coil, Steel Plate, Steel Rebar, Bags. Cargo lines support "＋ Add Cargo", volume in MT and Import/Export direction. At ATC a mandatory popup captures Total Hatch Covers and Total Bin Boxes, which are added to total moves.
 
 ### Module 8 — 3D digital twin
-Static world: sea, anchorage ~4 km clear of the channel, navigation channel with buoys, pilot boarding ground, L-shaped quay with CB1/CB2/B3, yard with containers, RTGs and trailers, coastline. Dynamic objects driven by live plan data: vessels scaled to LOA with type-specific hulls, tug escorts on berthing and departure, QC cranes with boom and trolley motion when operating, numbered bollards with live states, dynamic mooring ropes that always terminate on the selected bollards. Interactions: orbit, zoom, camera presets per berth/anchorage/channel, day/night mode, mobile/desktop quality, guided cinematic tour, single click for a quick info card, double click for the full VESSEL INFORMATION panel. Automatic 2D top-view fallback when WebGL or the CDN is unavailable.
+Static world: sea, anchorage ~4 km clear of the channel, navigation channel with buoys, pilot boarding ground, L-shaped quay with CB1/CB2/B3, yard with containers, RTGs and trailers, coastline. Dynamic objects driven by live plan data: vessels scaled to LOA with type-specific hulls, tug escorts on berthing and departure, QC cranes with boom and trolley motion when operating, numbered bollards with live states, dynamic mooring ropes that always terminate on the selected bollards. Interactions: orbit, zoom, camera presets per berth/anchorage/channel, day/night mode, mobile/desktop quality, guided cinematic tour, single click for a quick info card, double click for the full VESSEL INFORMATION panel. Automatic 2D top-view fallback when WebGL is unavailable.
 
 ### Module 9 — Performance, reports and notifications
 **BMPH** = (Discharge + Loading + Hatch Covers + Bin Boxes) ÷ Port Stay hours (ATB→ATD), per vessel and averaged. **GCR** entered per vessel in the Vessel History & GCR section; completing a vessel cycle removes it from the pending list. Analytics: vessel-wise GCR column chart with a threshold line at 30 (red below 30, green at 30 and above) and a vessel-wise BMPH chart with no colour condition, both filterable by one or many months. Reports: Monthly Vessels + GCR, Vessel Report (with cargo volume, BMPH and GCR), Liquid Report, Bulk & Break-Bulk Report, Crane Detailed Report, Vessel History, Berth Utilization, Cargo Summary — exportable to CSV and PDF; Admin can edit report data. Notifications with unread count for berth assignment, crane assignment, milestone events, plan abort and crane unavailability.
@@ -145,7 +145,7 @@ The authoritative, testable definitions live in [`BUSINESS_RULES.md`](BUSINESS_R
 | Layer | Prototype v2.2 | Target production |
 |---|---|---|
 | Frontend | HTML5, CSS3, vanilla JavaScript (ES2020) | Next.js, React, TypeScript, Tailwind CSS |
-| 3D | Three.js r128 (CDN) with 2D canvas fallback | Three.js via react-three-fiber |
+| 3D | Three.js r128 (vendored in `www/vendor/`) with 2D canvas fallback | Three.js via react-three-fiber |
 | Backend | none — in-browser state | NestJS (TypeScript), REST + OpenAPI |
 | Database | none — in-memory | PostgreSQL with Prisma ORM |
 | Realtime | not applicable | Socket.IO |
@@ -185,7 +185,7 @@ The authoritative, testable definitions live in [`BUSINESS_RULES.md`](BUSINESS_R
 | Assumption | 22.5 m nominal bollard spacing applies along all three berths | Spacing is a single configurable constant; validation is CB1-only by design |
 | Assumption | Operators exercise judgement on CB2/B3 mooring | Deliberate: CB2/B3 bollard selection is unrestricted and recorded; conflicts remain visible as information |
 | Assumption | The prototype's Three.js scene can be reused in the production frontend | Scene is already isolated in `app.js` and driven only by plan data |
-| Dependency | Three.js CDN availability for the 3D twin | Automatic 2D top-view fallback; can be vendored locally |
+| Dependency | Three.js for the 3D twin | Vendored in `www/vendor/` — no network dependency; automatic 2D top-view fallback without WebGL |
 | Dependency | OTP delivery channel at go-live | Demo OTP now; email OTP free; SMS gateway (MSG91/Twilio) when budget allows |
 | Risk | Free hosting tiers sleep when idle | Acceptable for pilot; upgrade path documented in `ROADMAP.md` |
 | Risk | Scope growth toward TOS functions (yard, gate, billing) | Explicit out-of-scope list in §3.2; changes require a PRD revision |

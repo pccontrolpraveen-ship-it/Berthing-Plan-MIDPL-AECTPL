@@ -30,23 +30,22 @@ Press **Create repository**.
 On the empty repository page click **uploading an existing file**. Drag in the contents of this pack, keeping the folder structure:
 
 ```
-index.html
-styles.css
-app.js
 README.md
 CHANGELOG.md
 CONTRIBUTING.md
 SECURITY.md
 LICENSE
 .gitignore
+www/             (index.html, styles.css, app.js, vendor/three.min.js)
+server/          (server.js, schema.sql, package.json)
 docs/            (PRD.md, BUSINESS_RULES.md, SRS.md, ARCHITECTURE.md,
                   USER_GUIDE.md, ROADMAP.md, TESTING.md,
                   GITHUB_UPLOAD_GUIDE.md, screenshots/)
 tests/           (test_app.js)
-.github/         (workflows/deploy-pages.yml)
+.github/         (workflows/test.yml, workflows/deploy-pages.yml)
 ```
 
-> Drag the **folders** themselves (`docs`, `tests`, `.github`) rather than the individual files inside them — GitHub keeps the structure automatically. If the `.github` folder is hard to drag (hidden folders can be awkward on some systems), skip it for now and add it later with **Add file → Create new file**, typing `.github/workflows/deploy-pages.yml` as the filename.
+> Drag the **folders** themselves (`www`, `server`, `docs`, `tests`, `.github`) rather than the individual files inside them — GitHub keeps the structure automatically. If the `.github` folder is hard to drag (hidden folders can be awkward on some systems), skip it for now and add it later with **Add file → Create new file**, typing `.github/workflows/deploy-pages.yml` as the filename.
 
 In **Commit changes** write: `Initial commit — PORTVISION 3D v2.2 prototype and documentation`, then **Commit changes**.
 
@@ -89,7 +88,7 @@ Because the prototype is three static files, GitHub can host it at no cost.
 4. After a minute or two your application is live at
    `https://<your-username>.github.io/portvision-3d/`
 
-Anyone with the link can open it on a laptop, tablet or phone — no installation. Note that GitHub Pages sites are **publicly accessible even from a private repository**, so enable Pages only if a publicly reachable demo URL is acceptable. If it is not, skip this section entirely; the application still runs perfectly by opening `index.html` locally.
+Anyone with the link can open it on a laptop, tablet or phone — no installation. Note that GitHub Pages sites are **publicly accessible even from a private repository**, so enable Pages only if a publicly reachable demo URL is acceptable. If it is not, skip this section entirely; the application still runs perfectly by opening `www/index.html` locally.
 
 ---
 

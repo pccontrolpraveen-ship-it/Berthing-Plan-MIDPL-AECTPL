@@ -4,6 +4,22 @@ All notable changes to PORTVISION 3D. Format loosely follows [Keep a Changelog](
 
 ---
 
+## [2.5] — 2026-08-24
+
+### Changed — packaging groundwork (phase 0)
+- **Three.js vendored locally.** `www/vendor/three.min.js` (r128, npm `three@0.128.0`, MIT) replaces the `cdnjs.cloudflare.com` `<script src>`. The application now loads with **no network access at all** — required for terminal machines without internet, and mandatory for the Capacitor/Electron packaging in `docs/ROADMAP.md`, whose default Content-Security-Policy blocks remote scripts outright. Provenance and the upgrade procedure are recorded in `www/vendor/README.md`.
+- **Repository restructured** to the layout the documentation already described: `www/` (everything the browser loads, and the folder a mobile/desktop wrapper will package), `server/`, `tests/`, `docs/`, `docs/screenshots/`. Nothing moved inside `app.js`.
+- **CI workflows now actually run.** `test.yml` and `deploy-pages.yml` were sitting in the repository root instead of `.github/workflows/`, so neither had ever executed; they also referenced paths (`tests/test_app.js`, `docs/screenshots`) that did not exist in the flat layout. Both are now correctly placed and pointed at the real files.
+- `.gitignore` restored — the file had been committed under the name `download`.
+
+### Fixed
+- **Kattupalli 3D twin crashed on load.** `initTwin` iterated *every* crane in the master, including Ennore's QC-01…04, and looked each up in a Kattupalli-only `QC_ORDER` table — `QC_ORDER['EB1']` is `undefined`, so `.indexOf` threw and the scene was abandoned half-built (`TypeError: Cannot read properties of undefined (reading 'indexOf')`). Introduced with the Ennore cranes in 2.3 and invisible until now: the regression suite has no internet, so Three.js never loaded and the twin silently took the 2D fallback path on every CI run. The loop is now scoped to the port being drawn, matching `initTwinENN` and the 2D fallback.
+
+### Tests
+- The suite exercises the **real WebGL scene** for the first time — headless Chromium software-rasterises it, and `shots/v3_twin.png` is now the actual 3D twin rather than the 2D fallback. A crash in the 3D path fails the release gate from here on. Suite total: 34 blocks, ERRORS: none.
+
+---
+
 ## [2.4] — 2026-08-14
 
 ### Added — persistence, validation and the GPS-accurate Ennore twin

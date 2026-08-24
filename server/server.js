@@ -8,7 +8,7 @@
  *   npm run init-db        # creates tables + reference data (or: psql "$DATABASE_URL" -f schema.sql)
  *   npm start              # listens on http://localhost:4000
  *
- * Open index.html afterwards — the app detects the server via /api/health and the
+ * Open www/index.html afterwards — the app detects the server via /api/health and the
  * top-bar badge switches from "💾 Standalone" to "🗄 PostgreSQL".
  * A different host/port can be set once per browser: localStorage.setItem('pv_api','http://host:port')
  */

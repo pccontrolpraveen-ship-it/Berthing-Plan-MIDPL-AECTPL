@@ -6,7 +6,7 @@ Version 2.2 · For Vessel Planners, Managers and Administrators
 
 ## 1. Signing in
 
-1. Open `index.html` in Google Chrome or Microsoft Edge.
+1. Open `www/index.html` in Google Chrome or Microsoft Edge.
 2. Choose your role: **Vessel Planner**, **Manager** or **Admin**.
 3. Enter your 10-digit mobile number and press **Send OTP**.
 4. Enter the OTP. In demo mode the OTP is **123456**.
@@ -139,6 +139,6 @@ Eight tabs: **Monthly Vessels + GCR**, **Vessel Report** (cargo volume, port sta
 
 ## 8. Practical notes
 
-- The three files `index.html`, `styles.css` and `app.js` must stay in the same folder.
+- The whole `www/` folder must be kept together — `index.html`, `styles.css`, `app.js` and `vendor/`.
 - In this prototype, data lives for the browser session only — closing the tab clears the plan. Permanent storage arrives with the production database (see [`ROADMAP.md`](ROADMAP.md)).
 - The 3D twin needs internet access the first time to load Three.js; without it the 2D view is used.

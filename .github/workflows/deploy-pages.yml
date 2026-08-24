@@ -1,5 +1,5 @@
-# Publishes the PORTVISION 3D prototype (index.html + styles.css + app.js)
-# to GitHub Pages. No build step — the application is static.
+# Publishes the PORTVISION 3D prototype (the www/ folder) to GitHub Pages.
+# No build step — the application is static.
 #
 # Enable once in: Settings → Pages → Source: GitHub Actions
 # NOTE: Pages sites are publicly reachable even from a private repository.
@@ -30,13 +30,12 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Syntax check application script
-        run: node --check app.js
+        run: node --check www/app.js
 
       - name: Stage the static site
         run: |
-          mkdir -p _site
-          cp index.html styles.css app.js _site/
-          cp -r docs/screenshots _site/screenshots || true
+          cp -r www _site
+          cp -r docs/screenshots _site/screenshots
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

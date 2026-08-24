@@ -2,7 +2,7 @@
  * Run from the repository root:  node tests/test_app.js   →  final line: ERRORS: none */
 const { chromium } = require('playwright');
 const path = require('path');
-const APP_URL = 'file://' + path.resolve(__dirname, '..', 'index.html');
+const APP_URL = 'file://' + path.resolve(__dirname, '..', 'www', 'index.html');
 (async () => {
   const browser = await chromium.launch().catch(() => chromium.launch({ executablePath: '/opt/pw-browsers/chromium' }));
   const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });

@@ -11,7 +11,7 @@ A zero-dependency browser application. No server, no build step, no installation
 ```
 ┌───────────────────────── Browser (Chrome / Edge) ─────────────────────────┐
 │                                                                           │
-│  index.html      structure: splash · login · OTP · app shell              │
+│  www/index.html  structure: splash · login · OTP · app shell              │
 │  styles.css      all presentation (sidebar, tiles, timeline, chips…)      │
 │  app.js          ┌──────────────────────────────────────────────────┐     │
 │                  │ reference data   berths · cranes · bollard pools │     │
@@ -22,7 +22,7 @@ A zero-dependency browser application. No server, no build step, no installation
 │                  │ 2D fallback      canvas top view                 │     │
 │                  └──────────────────────────────────────────────────┘     │
 │                                                                           │
-│  Three.js r128 ← cdnjs (optional; absence triggers the 2D fallback)       │
+│  Three.js r128 ← www/vendor/ (vendored; no network — 2D fallback if no GL) │
 └───────────────────────────────────────────────────────────────────────────┘
 ```
 

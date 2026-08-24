@@ -18,7 +18,7 @@ jobs:
           node-version: 20
 
       - name: Syntax check
-        run: node --check app.js
+        run: node --check www/app.js
 
       - name: Install Playwright
         run: |

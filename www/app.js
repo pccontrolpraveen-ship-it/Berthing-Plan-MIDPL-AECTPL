@@ -1519,8 +1519,10 @@ function initTwin(){
   const rotFor={CB1:Math.PI/2,CB2:0.577};
   /* physical crane order along each quay, as corrected by the planner */
   const QC_ORDER={CB1:['QC01','QC02','QC04','QC03'],CB2:['QC08','QC05','QC06','QC07']};
-  cranes.forEach((q,i)=>{
-    const F=b3d[q.berth];const slot=QC_ORDER[q.berth].indexOf(q.id);
+  /* Kattupalli scene: this port's cranes only — Ennore's QC-01…04 belong to initTwinENN */
+  cranes.filter(q=>(q.port||'KTP')==='KTP').forEach((q,i)=>{
+    const F=b3d[q.berth];if(!F)return;
+    const slot=(QC_ORDER[q.berth]||[]).indexOf(q.id);
     const t=0.18+(slot<0?(i%4):slot)*0.21;
     const p=alongQuay(F,t);
     const g=buildCrane(0,scene,q.id);

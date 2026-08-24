@@ -12,7 +12,7 @@ npx playwright install chromium
 node tests/test_app.js
 ```
 
-The suite drives a real Chromium browser through the whole application: login, vessel creation, planning, bollard selection, milestone recording, dashboard, reports and the 3D twin (via its 2D fallback in headless mode). It prints one line per check and finishes with:
+The suite drives a real Chromium browser through the whole application: login, vessel creation, planning, bollard selection, milestone recording, dashboard, reports and the 3D twin. It prints one line per check and finishes with:
 
 ```
 ERRORS: none
@@ -83,7 +83,7 @@ Two habits worth keeping from the prototype's development:
 
 ## Manual verification checklist
 
-Automated checks run headless, where WebGL is unavailable and the 2D fallback is exercised. After any change to the 3D scene, verify manually in Chrome or Edge:
+Since Three.js was vendored into `www/vendor/`, headless Chromium loads it from disk and renders the **real WebGL scene** (software-rasterised) — `shots/v3_twin.png` shows the actual 3D twin, so a crash in the 3D path now fails the suite. What headless still cannot judge is whether the scene looks *right*. After any change to the 3D scene, verify manually in Chrome or Edge:
 
 - [ ] Vessels sit alongside at their bollard-range midpoint, not the berth centre
 - [ ] Port and Starboard selection visibly turns the vessel around
@@ -101,7 +101,7 @@ Automated checks run headless, where WebGL is unavailable and the 2D fallback is
 Before running the suite:
 
 ```bash
-node --check app.js
+node --check www/app.js
 ```
 
-`app.js` is a single large file; a syntax error prevents the whole application from loading, so this check catches the most expensive class of mistake in one second.
+`www/app.js` is a single large file; a syntax error prevents the whole application from loading, so this check catches the most expensive class of mistake in one second.

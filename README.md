@@ -16,7 +16,7 @@ git clone https://github.com/<your-username>/portvision-3d.git
 cd portvision-3d
 ```
 
-Then open `index.html` in **Google Chrome** or **Microsoft Edge**.
+Then open `www/index.html` in **Google Chrome** or **Microsoft Edge**.
 
 Login (demo mode):
 
@@ -26,7 +26,7 @@ Login (demo mode):
 | Mobile | any 10-digit number |
 | OTP | `123456` |
 
-Nothing else is required. Three.js loads from a CDN for the 3D twin; without internet access the application automatically falls back to a built-in 2D top view.
+Nothing else is required, and no internet connection is needed — Three.js is vendored in `www/vendor/` (see `www/vendor/README.md`). If WebGL itself is unavailable, the application falls back to a built-in 2D top view.
 
 ### Optional — PostgreSQL persistence (recommended)
 
@@ -40,7 +40,7 @@ npm run init-db      # creates tables + reference data
 npm start            # http://localhost:4000
 ```
 
-Reopen `index.html` — the badge switches to **🗄 PostgreSQL** and every vessel/voyage save goes through a validated database transaction.
+Reopen `www/index.html` — the badge switches to **🗄 PostgreSQL** and every vessel/voyage save goes through a validated database transaction.
 
 ---
 
@@ -48,9 +48,11 @@ Reopen `index.html` — the badge switches to **🗄 PostgreSQL** and every vess
 
 | Path | What it is |
 |---|---|
-| `index.html` | Page structure — splash, login/OTP, application shell |
-| `styles.css` | All styling (sidebar, dashboard, timeline, bollard chips, charts, modals) |
-| `app.js` | Complete application logic — planning workflow, rules engine, reports, 3D digital twin |
+| `www/` | The application — everything a browser loads, and the folder packaged for mobile/desktop |
+| `www/index.html` | Page structure — splash, login/OTP, application shell |
+| `www/styles.css` | All styling (sidebar, dashboard, timeline, bollard chips, charts, modals) |
+| `www/app.js` | Complete application logic — planning workflow, rules engine, reports, 3D digital twin |
+| `www/vendor/` | Vendored third-party libraries (Three.js r128) — checked in so the app loads offline |
 | `tests/test_app.js` | Playwright end-to-end regression suite (34 blocks incl. Ennore + persistence) |
 | `server/` | Persistence API — Express + PostgreSQL (`schema.sql`, `server.js`) |
 | `docs/PRD.md` | Product Requirements Document v2.2 |
