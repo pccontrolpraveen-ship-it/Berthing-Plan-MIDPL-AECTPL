@@ -28,6 +28,23 @@ Login (demo mode):
 
 Nothing else is required, and no internet connection is needed — Three.js is vendored in `www/vendor/` (see `www/vendor/README.md`). If WebGL itself is unavailable, the application falls back to a built-in 2D top view.
 
+### Install it as an app (optional)
+
+Served over HTTPS — or from `http://localhost` — PORTVISION is an installable
+progressive web app. Chrome and Edge on Windows, macOS and Android offer
+**Install** in the address bar; on iOS use Safari's **Share → Add to Home
+Screen**. Installed, it opens in its own window with no browser chrome, and
+**launches with no network connection** — the whole application, Three.js
+included, is precached by `www/sw.js`.
+
+Opening `www/index.html` directly from disk still works, but `file://` has no
+service worker, so there is nothing to install and nothing precached.
+
+Offline never changes what the app claims about storage: the persistence API is
+deliberately never cached, so with no server reachable the badge reads
+**💾 Standalone** and says so honestly rather than reporting a database save
+that did not happen.
+
 ### Optional — PostgreSQL persistence (recommended)
 
 Without a server the app runs in **Standalone** mode (data saved in that browser only — the top-bar badge says so). For real database storage shared across users and restarts:
@@ -53,7 +70,10 @@ Reopen `www/index.html` — the badge switches to **🗄 PostgreSQL** and every 
 | `www/styles.css` | All styling (sidebar, dashboard, timeline, bollard chips, charts, modals) |
 | `www/app.js` | Complete application logic — planning workflow, rules engine, reports, 3D digital twin |
 | `www/vendor/` | Vendored third-party libraries (Three.js r128) — checked in so the app loads offline |
+| `www/manifest.webmanifest`, `www/sw.js`, `www/pwa.js`, `www/icons/` | Progressive web app — installable, launches with no network |
+| `tools/make-icons.js` | Regenerates the app icons from a single vector definition |
 | `tests/test_app.js` | Playwright end-to-end regression suite (34 blocks incl. Ennore + persistence) |
+| `tests/test_pwa.js` | Manifest, service worker and offline-launch checks |
 | `server/` | Persistence API — Express + PostgreSQL (`schema.sql`, `server.js`) |
 | `docs/PRD.md` | Product Requirements Document v2.2 |
 | `docs/BUSINESS_RULES.md` | Authoritative berthing, bollard, crane and productivity rules |

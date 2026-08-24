@@ -260,3 +260,9 @@ input:disabled{background:#F4F6FA;color:#8B94A7}
   .planGrid{grid-template-columns:1fr}.msRow{grid-template-columns:52px 1fr;gap:8px}
   .cargoGrid{grid-template-columns:repeat(2,1fr)}
 }
+
+/* ---------- PWA update prompt (created by pwa.js when a new version is waiting) ---------- */
+.pwaUpdate{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9999;display:flex;align-items:center;gap:12px;
+  background:var(--navy);color:#fff;border-radius:11px;padding:11px 14px;font-size:13.5px;box-shadow:0 12px 34px rgba(16,27,48,.38);max-width:calc(100vw - 32px)}
+.pwaUpdate button{border:none;border-radius:8px;padding:7px 13px;font-size:12.5px;font-weight:700;background:#7FD1C8;color:#0E2036}
+.pwaUpdate button.ghost{background:rgba(255,255,255,.14);color:#DCE5F4}

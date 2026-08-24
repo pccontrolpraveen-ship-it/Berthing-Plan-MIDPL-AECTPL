@@ -18,7 +18,11 @@ jobs:
           node-version: 20
 
       - name: Syntax check
-        run: node --check www/app.js
+        run: |
+          node --check www/app.js
+          node --check www/sw.js
+          node --check www/pwa.js
+          node -e "JSON.parse(require('fs').readFileSync('www/manifest.webmanifest','utf8'))"
 
       - name: Install Playwright
         run: |
@@ -34,4 +38,15 @@ jobs:
             echo "All checks passed."
           else
             echo "Regression suite reported errors:"; tail -5 result.txt; exit 1
+          fi
+
+      - name: Run progressive web app checks
+        run: node tests/test_pwa.js | tee pwa.txt
+
+      - name: Fail if the PWA checks reported errors
+        run: |
+          if grep -q "ERRORS: none" pwa.txt; then
+            echo "Offline launch verified."
+          else
+            echo "PWA checks reported errors:"; tail -5 pwa.txt; exit 1
           fi

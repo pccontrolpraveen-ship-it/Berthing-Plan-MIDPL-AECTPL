@@ -23,6 +23,8 @@ A zero-dependency browser application. No server, no build step, no installation
 │                  └──────────────────────────────────────────────────┘     │
 │                                                                           │
 │  Three.js r128 ← www/vendor/ (vendored; no network — 2D fallback if no GL) │
+│  sw.js           precaches the shell; /api/ deliberately never intercepted │
+│  manifest + icons installable on Android, Windows, macOS; iOS via Safari   │
 └───────────────────────────────────────────────────────────────────────────┘
 ```
 

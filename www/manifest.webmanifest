@@ -1,0 +1,19 @@
+{
+  "id": "portvision-3d",
+  "name": "PORTVISION 3D — Vessel Berthing Planning",
+  "short_name": "PORTVISION",
+  "description": "Vessel berthing planning and port operations for MIDPL Kattupalli and AECTPL Ennore, with a live 3D digital twin.",
+  "lang": "en-IN",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#14243F",
+  "theme_color": "#1F3864",
+  "categories": ["business", "productivity", "utilities"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

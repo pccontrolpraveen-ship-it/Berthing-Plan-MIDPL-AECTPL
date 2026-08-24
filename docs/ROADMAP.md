@@ -62,7 +62,7 @@ Indicative effort for one person working evenings with AI assistance: steps 0–
 **Later**
 
 - AECTPL Ennore — reference data plus its own 3D layout; the data model is already multi-terminal
-- Native or installable mobile app for marine users on the quay
+- ~~Installable app for marine users on the quay~~ — delivered in 2.6 as a progressive web app: installable on Android, Windows and macOS, added to the Home Screen on iOS, and launching with no network. Native store builds (Capacitor for iOS/Android, Electron for Windows/macOS) remain ahead, gated on the responsive rework of the planning screens
 - TOS / EDI integration (BAPLIE, COARRI) to remove manual cargo entry
 - Weather feed on the dashboard
 - Predictive ETA and berth suggestion from historical performance

@@ -9,8 +9,11 @@ Version 2.2 · Regression suite `tests/test_app.js`
 ```bash
 npm install -D playwright
 npx playwright install chromium
-node tests/test_app.js
+node tests/test_app.js     # application regression suite
+node tests/test_pwa.js     # manifest, service worker, offline launch
 ```
+
+Both suites end with `ERRORS: none`, and both are release gates.
 
 The suite drives a real Chromium browser through the whole application: login, vessel creation, planning, bollard selection, milestone recording, dashboard, reports and the 3D twin. It prints one line per check and finishes with:
 
@@ -78,6 +81,31 @@ Two habits worth keeping from the prototype's development:
 
 - **Drive rules through the real UI where practical** (clicking chips, sliders, buttons) and through `page.evaluate` only when constructing a scenario would otherwise take dozens of steps.
 - **Assert the message, not just the outcome.** The exact strings are part of the specification; operators depend on them naming the blocking vessel and the time the constraint clears.
+
+---
+
+## Progressive web app checks — `tests/test_pwa.js`
+
+A service worker needs a real origin, and `test_app.js` loads the application
+over `file://` where workers are unavailable by design. This suite therefore
+serves `www/` over `http://127.0.0.1` — a secure origin for service worker
+purposes — installs the worker, then **pulls the network away** and proves the
+application still launches.
+
+| Block | Verifies |
+|---|---|
+| P1 | The manifest is linked, served, names the app, declares `standalone`, uses a relative `start_url` (so it works under the GitHub Pages subpath), and every icon including the maskable one returns 200 |
+| P2 | The service worker installs, activates and takes control of the page |
+| P3 | **The API is never intercepted** — both `/api/` calls reach the origin server, and no API response is written to any cache |
+| P4 | Offline: the shell is served, Three.js r128 loads from cache, the stylesheet applies, a planner can log in and reach the Dashboard, the storage badge still honestly reads 💾 Standalone, and `/api/health` genuinely fails rather than being faked |
+| P5 | Back online, the 3D twin still renders after an offline session |
+
+P3 and P4.7 exist because the persistence layer's central promise is that it
+never claims a save it did not make. A worker that answered `/api/health` from
+cache would make the top-bar badge report PostgreSQL storage while the database
+was unreachable, so the bypass is tested rather than assumed.
+
+Offline evidence is written to `shots/pwa_offline.png`.
 
 ---
 

@@ -4,6 +4,21 @@ All notable changes to PORTVISION 3D. Format loosely follows [Keep a Changelog](
 
 ---
 
+## [2.6] — 2026-08-24
+
+### Added — installable progressive web app (phase 1)
+- **Web app manifest** (`www/manifest.webmanifest`): PORTVISION is now installable from Chrome/Edge on Windows, macOS and Android, and from Safari on iOS via *Add to Home Screen*. It opens in its own window with no browser chrome. `start_url` and `scope` are relative, so it installs correctly under the GitHub Pages project sub-path as well as from a wrapper's root.
+- **Service worker** (`www/sw.js`): precaches the whole shell — `index.html`, `styles.css`, `app.js`, the vendored Three.js and every icon — so the application **launches with no network at all**. This is what phase 0's vendoring was for; a planner on the quay with no signal gets the full app, 3D twin included.
+- **The persistence API is never intercepted.** Cross-origin requests and any `/api/` path bypass the worker entirely. The app decides between 🗄 PostgreSQL and 💾 Standalone from a live `/api/health` probe, so a cached or synthesised response would make the top-bar badge claim a database save that never happened — the precise dishonesty the persistence layer exists to prevent. Both the bypass and the honest offline failure are tested, not assumed.
+- **Update handling that cannot lose work.** A new version installs in the background and takes over on the next launch; the worker never calls `skipWaiting()` on its own and never force-reloads, because the planning screen holds unsaved work behind a dirty-state guard. `www/pwa.js` raises a dismissible prompt instead, and the planner reloads when ready.
+- **App icons** (`www/icons/`, 192/512/maskable/apple-touch) generated from one vector definition by `tools/make-icons.js`. The anchor is drawn as SVG paths rather than an emoji, so output does not depend on the fonts installed on the machine rendering it.
+- Registration lives in `www/pwa.js` rather than an inline `<script>`, because the Capacitor and Electron packaging ahead runs under a CSP that blocks inline script. It disables itself silently on `file://` and on browsers without service worker support.
+
+### Tests
+- New suite `tests/test_pwa.js` (19 checks): serves `www/` over a local origin, installs the worker, then **takes the network away** and proves the shell is served, Three.js r128 loads from cache, a planner can log in and reach the Dashboard, the storage badge stays honest, and `/api/health` genuinely fails rather than being faked. Offline evidence in `shots/pwa_offline.png`. Wired into CI as a second release gate. ERRORS: none.
+
+---
+
 ## [2.5] — 2026-08-24
 
 ### Changed — packaging groundwork (phase 0)
