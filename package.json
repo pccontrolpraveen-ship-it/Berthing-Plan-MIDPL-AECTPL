@@ -1,0 +1,74 @@
+{
+  "name": "portvision-3d",
+  "productName": "PORTVISION 3D",
+  "version": "2.8.0",
+  "description": "Vessel berthing planning and port operations for MIDPL Kattupalli and AECTPL Ennore, with a live 3D digital twin.",
+  "main": "desktop/main.js",
+  "private": true,
+  "license": "UNLICENSED",
+  "author": "MIDPL Kattupalli / Adani Ports & Special Economic Zone Limited",
+  "scripts": {
+    "test": "node tests/test_app.js",
+    "test:pwa": "node tests/test_pwa.js",
+    "test:responsive": "node tests/test_responsive.js",
+    "test:desktop": "node tests/test_desktop.js",
+    "desktop": "electron .",
+    "desktop:pack": "electron-builder --dir",
+    "desktop:dist": "electron-builder",
+    "desktop:win": "electron-builder --win",
+    "desktop:mac": "electron-builder --mac",
+    "desktop:linux": "electron-builder --linux",
+    "icons": "node tools/make-icons.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.0",
+    "pg": "^8.12.0"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0",
+    "playwright": "^1.47.0"
+  },
+  "build": {
+    "appId": "in.adaniports.portvision3d",
+    "productName": "PORTVISION 3D",
+    "directories": {
+      "output": "dist",
+      "buildResources": "desktop/assets"
+    },
+    "files": [
+      "desktop/main.js",
+      "desktop/preload.js",
+      "www/**/*",
+      "server/server.js",
+      "server/schema.sql",
+      "package.json"
+    ],
+    "asarUnpack": ["server/**"],
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "desktop/assets/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "PORTVISION 3D"
+    },
+    "mac": {
+      "target": [{ "target": "dmg" }, { "target": "zip" }],
+      "category": "public.app-category.business",
+      "icon": "desktop/assets/icon.png",
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "entitlements": "desktop/assets/entitlements.mac.plist",
+      "entitlementsInherit": "desktop/assets/entitlements.mac.plist"
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "category": "Office",
+      "icon": "desktop/assets/icon.png"
+    }
+  }
+}

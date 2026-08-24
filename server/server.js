@@ -171,4 +171,13 @@ app.put('/api/state', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => console.log('PORTVISION server listening on http://localhost:' + PORT));
+/* HOST is optional and unset by default, which keeps the standalone server
+   reachable from other machines as before. The desktop build sets it to
+   127.0.0.1: there the API is a private component of one installation, and the
+   endpoints carry no authentication, so it must not be offered to the LAN. */
+const HOST = process.env.HOST || undefined;
+/* Report the port actually bound rather than the requested one — with PORT=0
+   the OS assigns it, and the desktop build reads this line to learn where the
+   API ended up. */
+const server = app.listen(PORT, HOST, () =>
+  console.log('PORTVISION server listening on http://' + (HOST || 'localhost') + ':' + server.address().port));

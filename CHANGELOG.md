@@ -4,6 +4,28 @@ All notable changes to PORTVISION 3D. Format loosely follows [Keep a Changelog](
 
 ---
 
+## [2.8] — 2026-08-24
+
+### Added — Windows / macOS / Linux desktop build (phase 2)
+- **Electron wrapper** around the same `www/` folder the browser and the PWA use. No desktop-specific application logic: `desktop/main.js` provides the window, the origin the app is served from, and the optional backend. Build targets are NSIS for Windows, dmg + zip for macOS and AppImage for Linux, configured in the root `package.json`.
+- **Served over a local HTTP origin rather than `file://`.** `file://` is an opaque origin where service workers are unavailable and cross-origin fetches behave differently from every other environment this app runs in. Serving `www/` over `127.0.0.1` means the desktop build behaves exactly like the deployed web app — one less environment to reason about, and one less place for a bug to hide that no other build would show.
+- **The bundled persistence API starts only when a database is actually configured**, via `DATABASE_URL` or `databaseUrl` in `config.json` in the application data folder (File → Open App Data Folder…). With none configured the app runs Standalone and says so, exactly as on the web. File → Storage Mode… reports which mode is active and why.
+- **The API runs as a child process, on loopback, on an OS-assigned port.** Out-of-process because `server.js` installs no `error` handler on its connection pool, so a dropped PostgreSQL connection raises an unhandled error event — in-process that would take the whole application down. Bound to `127.0.0.1` because the endpoints carry no authentication and must not be offered to the network, and on port 0 so a desktop install never collides with a server the operator is already running.
+- **Hardened renderer**: `contextIsolation`, `sandbox`, no Node integration, and no IPC surface — the web app is no more privileged than it is in a browser tab. `window.open` and off-origin navigation are denied and handed to the operator's real browser instead. The static server refuses path traversal.
+- Icons for all three platforms derive from the same vector definition as the web icons, via `tools/make-icons.js`; macOS entitlements and the hardened runtime are configured, and `desktop/README.md` documents how to supply signing and notarization credentials.
+- **Dependencies consolidated into a root `package.json`** — electron-builder requires everything it packages under one project root. `npm install` now covers the app, Electron and the test tooling, and `npm run …` covers the suites and the build targets. `server/package.json` is unchanged and still describes the standalone server deployment.
+
+### Fixed
+- **`server.js` reported a port it had not necessarily bound.** It logged the requested `PORT` rather than the assigned one, so with `PORT=0` — where the OS chooses — it announced `localhost:0`. It now reports the port actually bound. Found by the desktop build, which reads that line to learn where the API ended up.
+- **`server.js` gained optional `HOST` binding.** Unset by default, so the standalone server stays reachable from other machines exactly as before; the desktop build sets it to `127.0.0.1`.
+
+### Tests
+- New suite `tests/test_desktop.js` (12 checks) drives the real Electron application and runs **twice**: against the working tree, and against a genuine build produced by `npm run desktop:pack`. The packaged run is what exercises the packaging itself — asar layout, `server/` unpacked so it can be forked, and dependency resolution from inside the archive. Both are release gates in CI.
+- D11 is the check that matters most: a configured but **unreachable** database must still report Standalone. A desktop build that starts its own backend is the easiest place for the persistence layer's honesty guarantee to quietly break — the API is up, so it looks healthy, while the database behind it is not.
+- All four suites: ERRORS: none.
+
+---
+
 ## [2.7] — 2026-08-24
 
 ### Changed — the application is now usable on a phone (phase 3)

@@ -28,6 +28,19 @@ A zero-dependency browser application. No server, no build step, no installation
 │  sw.js           precaches the shell; /api/ deliberately never intercepted │
 │  manifest + icons installable on Android, Windows, macOS; iOS via Safari   │
 └───────────────────────────────────────────────────────────────────────────┘
+
+The same www/ folder is also the payload of the desktop build:
+
+┌───────────────── Electron (Windows / macOS / Linux) ──────────────────────┐
+│  desktop/main.js   serves www/ over 127.0.0.1 — a real origin, so the      │
+│                    desktop build behaves exactly like the web and PWA      │
+│                    builds instead of being a fourth environment            │
+│  desktop/preload.js  points the app at the bundled API; exposes nothing    │
+│  server/server.js  forked as a child ONLY when a database is configured,   │
+│                    bound to loopback on an OS-assigned port                │
+│  renderer          contextIsolation, sandbox, no Node — as privileged as   │
+│                    a browser tab and no more                               │
+└───────────────────────────────────────────────────────────────────────────┘
 ```
 
 **Design characteristics**

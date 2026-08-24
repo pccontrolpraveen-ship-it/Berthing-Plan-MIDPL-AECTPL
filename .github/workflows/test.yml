@@ -24,9 +24,9 @@ jobs:
           node --check www/pwa.js
           node -e "JSON.parse(require('fs').readFileSync('www/manifest.webmanifest','utf8'))"
 
-      - name: Install Playwright
+      - name: Install dependencies
         run: |
-          npm install -D playwright
+          npm install
           npx playwright install --with-deps chromium
 
       - name: Run regression suite
@@ -60,4 +60,35 @@ jobs:
             echo "Phone, tablet and desktop layouts verified."
           else
             echo "Responsive checks reported errors:"; tail -8 responsive.txt; exit 1
+          fi
+
+      # Electron needs a display; the runner has no X server of its own.
+      - name: Run desktop (Electron) checks
+        run: xvfb-run -a node tests/test_desktop.js | tee desktop.txt
+
+      - name: Fail if the desktop checks reported errors
+        run: |
+          if grep -q "ERRORS: none" desktop.txt; then
+            echo "Desktop build verified."
+          else
+            echo "Desktop checks reported errors:"; tail -8 desktop.txt; exit 1
+          fi
+
+      # Packaging is verified separately: the same assertions are re-run against
+      # a real build, which is what exercises the asar layout, the unpacked
+      # server/ that gets forked, and dependency resolution inside the archive.
+      - name: Package the desktop app
+        run: npm run desktop:pack -- --linux
+
+      - name: Run desktop checks against the packaged build
+        env:
+          PORTVISION_PACKAGED: '1'
+        run: xvfb-run -a node tests/test_desktop.js | tee desktop-packaged.txt
+
+      - name: Fail if the packaged desktop checks reported errors
+        run: |
+          if grep -q "ERRORS: none" desktop-packaged.txt; then
+            echo "Packaged desktop build verified."
+          else
+            echo "Packaged desktop checks reported errors:"; tail -8 desktop-packaged.txt; exit 1
           fi

@@ -44,20 +44,23 @@ const TARGETS = [
   { file: 'icon-512.png', size: 512, opts: {} },
   { file: 'icon-maskable-512.png', size: 512, opts: { maskable: true } },
   { file: 'apple-touch-icon-180.png', size: 180, opts: { radiusPct: 0 } },
+  /* electron-builder derives the Windows .ico and the macOS .icns from a single
+     1024px source, so the desktop build needs no separate icon pipeline. */
+  { file: 'icon.png', size: 1024, opts: {}, dir: ['desktop', 'assets'] },
 ];
 
 (async () => {
   const browser = await chromium
     .launch()
     .catch(() => chromium.launch({ executablePath: '/opt/pw-browsers/chromium' }));
-  const out = path.resolve(__dirname, '..', 'www', 'icons');
   for (const t of TARGETS) {
+    const dir = path.resolve(__dirname, '..', ...(t.dir || ['www', 'icons']));
     const page = await browser.newPage({ viewport: { width: t.size, height: t.size } });
     await page.setContent(
       `<body style="margin:0;background:transparent">${svg(t.size, t.opts)}</body>`);
-    await page.screenshot({ path: path.join(out, t.file), omitBackground: true });
+    await page.screenshot({ path: path.join(dir, t.file), omitBackground: true });
     await page.close();
-    console.log('wrote', t.file, t.size + 'px');
+    console.log('wrote', path.relative(path.resolve(__dirname, '..'), path.join(dir, t.file)), t.size + 'px');
   }
   await browser.close();
 })();

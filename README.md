@@ -75,6 +75,8 @@ Reopen `www/index.html` — the badge switches to **🗄 PostgreSQL** and every 
 | `tests/test_app.js` | Playwright end-to-end regression suite (34 blocks incl. Ennore + persistence) |
 | `tests/test_pwa.js` | Manifest, service worker and offline-launch checks |
 | `tests/test_responsive.js` | Phone, tablet and desktop layout plus touch-target checks |
+| `tests/test_desktop.js` | Electron desktop build checks, in development and packaged |
+| `desktop/` | Windows/macOS/Linux build — Electron wrapper around the same `www/` ([`desktop/README.md`](desktop/README.md)) |
 | `server/` | Persistence API — Express + PostgreSQL (`schema.sql`, `server.js`) |
 | `docs/PRD.md` | Product Requirements Document v2.2 |
 | `docs/BUSINESS_RULES.md` | Authoritative berthing, bollard, crane and productivity rules |

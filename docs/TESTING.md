@@ -7,14 +7,20 @@ Version 2.2 · Regression suite `tests/test_app.js`
 ## Running the suite
 
 ```bash
-npm install -D playwright
+npm install
 npx playwright install chromium
 node tests/test_app.js         # application regression suite
 node tests/test_pwa.js         # manifest, service worker, offline launch
 node tests/test_responsive.js  # phone / tablet / desktop layout, touch targets
+node tests/test_desktop.js     # Electron desktop build
 ```
 
-All three suites end with `ERRORS: none`, and all three are release gates.
+All four suites end with `ERRORS: none`, and all four are release gates.
+
+`npm install` also fetches Electron, which is large. The desktop suite skips
+itself with `ERRORS: none (skipped)` when Electron is absent, so the other three
+run fine without it. On a headless machine the desktop suite needs a display:
+prefix it with `xvfb-run -a`.
 
 The suite drives a real Chromium browser through the whole application: login, vessel creation, planning, bollard selection, milestone recording, dashboard, reports and the 3D twin. It prints one line per check and finishes with:
 
@@ -134,6 +140,34 @@ charts) and fails only on overflow the operator could never reach.
 
 Layout evidence for every combination is written to
 `shots/responsive_<viewport>_<view>.png`.
+
+---
+
+## Desktop checks — `tests/test_desktop.js`
+
+Drives the real Electron application, twice over: once against the working tree,
+and once — with `PORTVISION_PACKAGED=1`, after `npm run desktop:pack` — against
+an actual build. The second run is the one that exercises the packaging itself:
+the asar layout, `server/` unpacked so it can be forked, and dependency
+resolution from inside the archive. Both runs are release gates in CI.
+
+| Block | Verifies |
+|---|---|
+| D1–D2 | The window opens and the app is served from a local **http** origin, not `file://`, so the desktop build behaves like every other build |
+| D3 | The renderer has no `require`, `process` or `module` — the web app is no more privileged than it is in a browser tab |
+| D4 | The static server refuses path traversal and will not serve anything outside `www/` |
+| D5–D7 | A planner can log in and reach the Dashboard; the storage badge reads Standalone; no stale API override is left in storage |
+| D8 | `window.open` is denied in-app — external links open in the operator's real browser |
+| D9 | The 3D twin renders under Electron |
+| D10 | With a database configured, the bundled API is started and its OS-assigned port is wired into the app |
+| D11 | **A configured but unreachable database still reports Standalone** |
+| D12 | The app stays usable with the database down |
+
+D11 is the one that matters most. The persistence layer's central promise is
+that it never claims a save it did not make, and a desktop build that starts its
+own backend is the easiest place for that to quietly break: the API is running,
+so it looks healthy, while the database behind it is not. The check configures a
+database that cannot answer and asserts the badge still says Standalone.
 
 ---
 
