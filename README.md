@@ -74,6 +74,7 @@ Reopen `www/index.html` — the badge switches to **🗄 PostgreSQL** and every 
 | `tools/make-icons.js` | Regenerates the app icons from a single vector definition |
 | `tests/test_app.js` | Playwright end-to-end regression suite (34 blocks incl. Ennore + persistence) |
 | `tests/test_pwa.js` | Manifest, service worker and offline-launch checks |
+| `tests/test_responsive.js` | Phone, tablet and desktop layout plus touch-target checks |
 | `server/` | Persistence API — Express + PostgreSQL (`schema.sql`, `server.js`) |
 | `docs/PRD.md` | Product Requirements Document v2.2 |
 | `docs/BUSINESS_RULES.md` | Authoritative berthing, bollard, crane and productivity rules |

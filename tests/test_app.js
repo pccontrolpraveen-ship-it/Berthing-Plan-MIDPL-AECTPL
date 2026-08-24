@@ -5,7 +5,7 @@ const path = require('path');
 const APP_URL = 'file://' + path.resolve(__dirname, '..', 'www', 'index.html');
 (async () => {
   const browser = await chromium.launch().catch(() => chromium.launch({ executablePath: '/opt/pw-browsers/chromium' }));
-  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, acceptDownloads: true });
   const errors = [];
   require('fs').mkdirSync(path.resolve(__dirname, '..', 'shots'), { recursive: true });
   page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message));
@@ -186,6 +186,23 @@ const APP_URL = 'file://' + path.resolve(__dirname, '..', 'www', 'index.html');
   console.log('T7 crane report rows:', craneRows, '(expect 2: QC01, QC02)');
   console.log('T7 pdf btn:', !!(await page.$('#pdfBtn')), 'csv btn:', !!(await page.$('#csvBtn')));
   await page.screenshot({ path: path.resolve(__dirname,'..','shots')+'/v3_reports.png' });
+  // T7b: exports actually produce something. CSV falls back to a download link
+  // where the share sheet is unavailable; the PDF path prints from a hidden
+  // same-page iframe, because window.open is blocked in an installed PWA and
+  // in every packaged web view.
+  const dl = page.waitForEvent('download', { timeout: 8000 }).catch(() => null);
+  await page.click('#csvBtn');
+  const got = await dl;
+  console.log('T7b CSV export:', got ? got.suggestedFilename() : 'NO DOWNLOAD');
+  await page.click('#pdfBtn');
+  await page.waitForTimeout(900);
+  const printed = await page.evaluate(() => {
+    const f = document.querySelector('#printFrame');
+    if (!f) return 'no iframe';
+    return { rows: f.contentDocument.querySelectorAll('tr').length,
+             offscreen: getComputedStyle(f).visibility === 'hidden' };
+  });
+  console.log('T7b PDF print frame:', JSON.stringify(printed));
   // 5. Admin can edit report data
   await page.click('#logout');
   await page.waitForTimeout(300);

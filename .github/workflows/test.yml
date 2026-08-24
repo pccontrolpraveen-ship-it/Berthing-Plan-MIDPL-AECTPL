@@ -50,3 +50,14 @@ jobs:
           else
             echo "PWA checks reported errors:"; tail -5 pwa.txt; exit 1
           fi
+
+      - name: Run responsive and touch checks
+        run: node tests/test_responsive.js | tee responsive.txt
+
+      - name: Fail if the responsive checks reported errors
+        run: |
+          if grep -q "ERRORS: none" responsive.txt; then
+            echo "Phone, tablet and desktop layouts verified."
+          else
+            echo "Responsive checks reported errors:"; tail -8 responsive.txt; exit 1
+          fi

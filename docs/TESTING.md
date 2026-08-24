@@ -9,11 +9,12 @@ Version 2.2 · Regression suite `tests/test_app.js`
 ```bash
 npm install -D playwright
 npx playwright install chromium
-node tests/test_app.js     # application regression suite
-node tests/test_pwa.js     # manifest, service worker, offline launch
+node tests/test_app.js         # application regression suite
+node tests/test_pwa.js         # manifest, service worker, offline launch
+node tests/test_responsive.js  # phone / tablet / desktop layout, touch targets
 ```
 
-Both suites end with `ERRORS: none`, and both are release gates.
+All three suites end with `ERRORS: none`, and all three are release gates.
 
 The suite drives a real Chromium browser through the whole application: login, vessel creation, planning, bollard selection, milestone recording, dashboard, reports and the 3D twin. It prints one line per check and finishes with:
 
@@ -106,6 +107,33 @@ cache would make the top-bar badge report PostgreSQL storage while the database
 was unreachable, so the bypass is tested rather than assumed.
 
 Offline evidence is written to `shots/pwa_offline.png`.
+
+---
+
+## Responsive and touch checks — `tests/test_responsive.js`
+
+Runs the whole application at phone (390x844), tablet (768x1024) and desktop
+(1440x900), with a real voyage planned first so the dense screens are measured
+with content rather than empty.
+
+| Block | Verifies |
+|---|---|
+| R1 | The login and OTP screens fit — the auth card used to be a hard 430px, wider than a 390px handset |
+| R2 | The drawer toggle appears only below the phone breakpoint |
+| R3 | On a phone the drawer slides in, keeps its nav **labels**, keeps **Log out** reachable, and closes on the scrim |
+| R4 | **Nothing is clipped** on any view at any width |
+| R5 | Every button, checkbox, bollard chip and crane chip is at least 44px on a touch screen |
+| R6 | A coarse pointer starts the 3D twin in the light graphics pipeline |
+
+R4 is the load-bearing check. The shell is deliberately `overflow:hidden` — it
+is a fixed application frame, not a scrolling document — so horizontal overflow
+is not merely untidy, it is **unreachable**: content pushed past the right edge
+cannot be scrolled to at all. The probe therefore ignores anything sitting
+inside a box that scrolls on its own (tables, the month timeline, the column
+charts) and fails only on overflow the operator could never reach.
+
+Layout evidence for every combination is written to
+`shots/responsive_<viewport>_<view>.png`.
 
 ---
 

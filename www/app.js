@@ -266,6 +266,12 @@ let planSnap=null, planDirty=false, planSnapId=null, tlExtraDays=0;
 
 /* ============================== HELPERS ============================== */
 const $ = s => document.querySelector(s);
+/* Phones and tablets get the lighter 3D pipeline by default — shadow maps and a
+   2x pixel ratio are what make the twin crawl on mobile GPUs. Still overridable
+   from the twin's own Desktop/Mobile button. */
+const wantsLightGraphics = () =>
+  (window.matchMedia && matchMedia('(pointer:coarse)').matches) ||
+  Math.min(innerWidth, innerHeight) <= 820;
 const vName = id => (vessels.find(v=>v.id===id)||{}).name||'—';
 const vOf = voy => vessels.find(x=>x.id===voy.vesselId);
 const activeVoyOnBerth = b => voyages.find(v=>v.berth===b && ['At Berth','Operating','Completed'].includes(v.status));
@@ -427,7 +433,7 @@ $('#verifyOtp').onclick=()=>{
   $('#uRole').textContent=user.role;$('#uMob').textContent='+91 '+user.mobile;
   buildNav();show('app');go('dashboard');updateBell();logAudit('Logged in');
 };
-$('#logout').onclick=()=>{user=null;document.querySelectorAll('#otpRow input').forEach(i=>i.value='');show('login');};
+$('#logout').onclick=()=>{setNav(false);user=null;document.querySelectorAll('#otpRow input').forEach(i=>i.value='');show('login');};
 $('#bellBtn').onclick=()=>go('notifications');
 const isAdmin=()=>user&&user.role==='Admin';
 const canPlan=()=>user&&(user.role==='Vessel Planner'||user.role==='Admin');
@@ -441,9 +447,20 @@ const NAVS=[
   {id:'notifications',lb:'Notifications', ic:'🔔', roles:['Vessel Planner','Manager','Admin']},
   {id:'admin',     lb:'Administration', ic:'🛡️', roles:['Admin']},
 ];
+/* Navigation drawer. On phones the sidebar is off-canvas — see styles.css — so
+   the whole nav keeps its labels instead of collapsing to an icon rail, and
+   Log out stays reachable. Above the breakpoint the drawer class does nothing. */
+function setNav(open){
+  $('#app').classList.toggle('navOpen',open);
+  $('#navToggle').setAttribute('aria-expanded',open?'true':'false');
+}
+$('#navToggle').onclick=()=>setNav(!$('#app').classList.contains('navOpen'));
+$('#navScrim').onclick=()=>setNav(false);
+document.addEventListener('keydown',e=>{if(e.key==='Escape')setNav(false);});
+
 function buildNav(){
   $('#navRow').innerHTML=NAVS.filter(n=>n.roles.includes(user.role)).map(n=>`<button data-v="${n.id}">${n.ic} <span class="nvLb">${n.lb}</span></button>`).join('');
-  document.querySelectorAll('#navRow button').forEach(b=>b.onclick=()=>go(b.dataset.v));
+  document.querySelectorAll('#navRow button').forEach(b=>b.onclick=()=>{setNav(false);go(b.dataset.v);});
 }
 function go(v){
   if(view==='planning'&&v!=='planning'&&planDirty){guardPlan(()=>go2(v));return;}
@@ -1256,16 +1273,43 @@ function wireReports(){
   document.querySelectorAll('[data-editvoy]').forEach(b=>b.onclick=()=>{
     const voy=voyages.find(v=>String(v.id)===b.dataset.editvoy);
     if(voy)editVoyModal(voy);});
-  $('#csvBtn').onclick=()=>{
+  $('#csvBtn').onclick=async()=>{
     const rows=[...document.querySelectorAll('#repCard tr')].map(tr=>[...tr.children].map(td=>'"'+td.textContent.replace(/"/g,'""')+'"').join(','));
     if(!rows.length){toast('Nothing to export yet',true);return;}
-    const blob=new Blob([rows.join('\n')],{type:'text/csv'});const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);a.download='portvision_'+repTab+'.csv';a.click();toast('CSV downloaded');};
+    const name='portvision_'+repTab+'.csv';
+    const blob=new Blob([rows.join('\n')],{type:'text/csv'});
+    /* A download attribute does nothing in an iOS web view or an installed PWA
+       on iOS, so offer the share sheet where the platform provides one and only
+       fall back to a download link where it actually works. */
+    if(navigator.canShare){
+      try{
+        const file=new File([blob],name,{type:'text/csv'});
+        if(navigator.canShare({files:[file]})){
+          await navigator.share({files:[file],title:'PORTVISION 3D '+repTab});
+          toast('CSV shared');return;
+        }
+      }catch(e){
+        if(e&&e.name==='AbortError')return;      /* the operator dismissed the sheet */
+      }
+    }
+    const a=document.createElement('a');const url=URL.createObjectURL(blob);
+    a.href=url;a.download=name;a.click();
+    setTimeout(()=>URL.revokeObjectURL(url),4000);
+    toast('CSV downloaded');};
   $('#pdfBtn').onclick=()=>{
     const tb=$('#repCard table');
     if(!tb){toast('Nothing to export yet',true);return;}
-    const w=window.open('','_blank');
-    if(!w){toast('Pop-up blocked — allow pop-ups or open the file in your browser',true);return;}
+    /* Printed from a hidden same-page iframe rather than a pop-up window: a
+       standalone PWA and every packaged web view block window.open, and pop-up
+       blockers used to eat this silently. */
+    const old=$('#printFrame');if(old)old.remove();
+    const fr=document.createElement('iframe');
+    fr.id='printFrame';
+    fr.setAttribute('aria-hidden','true');
+    fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+    document.body.appendChild(fr);
+    const w=fr.contentWindow;
+    w.document.open();
     w.document.write(`<html><head><title>PORTVISION 3D Report</title><style>
       body{font-family:Segoe UI,Arial;padding:26px;color:#1A2233}
       h2{color:#1F3864;margin-bottom:2px}.sub{color:#5A6478;font-size:12px;margin-bottom:16px}
@@ -1276,7 +1320,11 @@ function wireReports(){
       <h2>PORTVISION 3D — ${window._repTitle}</h2>
       <div class="sub">${curPortObj().label} Terminal · Generated ${new Date().toLocaleString('en-IN')}</div>
       ${tb.outerHTML}</body></html>`);
-    w.document.close();w.focus();setTimeout(()=>w.print(),300);};
+    w.document.close();
+    setTimeout(()=>{
+      try{w.focus();w.print();toast('Report sent to print / save as PDF');}
+      catch(e){toast('Could not open the print dialog: '+e.message,true);}
+    },300);};
 }
 
 /* ---------- Admin ---------- */
@@ -1316,7 +1364,7 @@ function rTwin(){
         ?`<button data-cam="over">Aerial</button><button data-cam="eb1">Ennore B1</button><button data-cam="anch">Anchorage</button><button data-cam="chan">Channel</button>`
         :`<button data-cam="over">Aerial</button><button data-cam="cb1">C1</button><button data-cam="cb2">C2</button><button data-cam="b3">C3</button><button data-cam="anch">Anchorage</button><button data-cam="chan">Channel</button>`}
       <button id="dayNight">🌙 Night</button>
-      <button id="qualBtn" class="on">🖥️ Desktop</button>
+      <button id="qualBtn" class="on">${wantsLightGraphics()?'📱 Mobile':'🖥️ Desktop'}</button>
       ${curPort==='ENN'?'':'<button id="tourBtn">🎬 Tour</button>'}
     </div>
     <div id="tourCap"></div>
@@ -1333,12 +1381,15 @@ function initTwin(){
   if(typeof THREE==='undefined'){init2DFallback();return;}
   const canvas=$('#twinCanvas');const wrap=$('#twinWrap');
   const W=wrap.clientWidth,Hh=wrap.clientHeight;
+  /* Decided before the pipeline is built: shadow maps and a 2x pixel ratio are
+     what make the twin crawl on a phone. The Desktop/Mobile button still wins. */
+  const light=wantsLightGraphics();
   const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
-  renderer.setSize(W,Hh,false);renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.setSize(W,Hh,false);renderer.setPixelRatio(light?1:Math.min(devicePixelRatio,2));
+  renderer.shadowMap.enabled=!light;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   const scene=new THREE.Scene();
-  const cam=new THREE.PerspectiveCamera(48,W/Hh,1,12000);
-  const state={night:false,mobile:false,az:-2.2,el:1.05,dist:1150,target:new THREE.Vector3(200,0,150),ships:new Map(),trailers:[],goal:null};
+  const cam=new THREE.PerspectiveCamera(light?60:48,W/Hh,1,12000);
+  const state={night:false,mobile:light,az:-2.2,el:1.05,dist:1150,target:new THREE.Vector3(200,0,150),ships:new Map(),trailers:[],goal:null};
   TW={renderer,scene,cam,state};
   TW.nightOnly=[];TW.rtgs=[];
   const hemi=new THREE.HemisphereLight(0xEAF2FF,0x39536B,0.8);scene.add(hemi);
@@ -2254,12 +2305,15 @@ function initTwinENN(){
   if(typeof THREE==='undefined'){init2DFallback();return;}
   const canvas=$('#twinCanvas');const wrap=$('#twinWrap');
   const W=wrap.clientWidth,Hh=wrap.clientHeight;
+  /* Decided before the pipeline is built: shadow maps and a 2x pixel ratio are
+     what make the twin crawl on a phone. The Desktop/Mobile button still wins. */
+  const light=wantsLightGraphics();
   const renderer=new THREE.WebGLRenderer({canvas,antialias:true});
-  renderer.setSize(W,Hh,false);renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+  renderer.setSize(W,Hh,false);renderer.setPixelRatio(light?1:Math.min(devicePixelRatio,2));
+  renderer.shadowMap.enabled=!light;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   const scene=new THREE.Scene();
-  const cam=new THREE.PerspectiveCamera(48,W/Hh,1,12000);
-  const state={night:false,mobile:false,az:-2.2,el:0.95,dist:950,target:new THREE.Vector3(-40,0,0),ships:new Map(),trailers:[],goal:null};
+  const cam=new THREE.PerspectiveCamera(light?60:48,W/Hh,1,12000);
+  const state={night:false,mobile:light,az:-2.2,el:0.95,dist:950,target:new THREE.Vector3(-40,0,0),ships:new Map(),trailers:[],goal:null};
   TW={renderer,scene,cam,state};
   TW.nightOnly=[];TW.tugs=[];TW.craneMeshes={};TW.bollardMarks={};
   const hemi=new THREE.HemisphereLight(0xEAF2FF,0x39536B,0.8);scene.add(hemi);

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>PORTVISION 3D — MIDPL Kattupalli</title>
 <meta name="description" content="Vessel berthing planning and port operations for MIDPL Kattupalli and AECTPL Ennore, with a live 3D digital twin.">
 <meta name="theme-color" content="#1F3864">
@@ -63,8 +63,10 @@
     <div class="nav" id="navRow"></div>
     <div class="sbUser"><b id="uRole"></b><span id="uMob"></span><button id="logout">Log out</button></div>
   </div>
+  <div class="navScrim" id="navScrim"></div>
   <div class="main">
     <div class="topbar">
+      <button class="navToggle" id="navToggle" aria-label="Menu" aria-expanded="false" aria-controls="navRow">☰</button>
       <span class="tbadge" style="padding:0;display:inline-flex;overflow:hidden">
         <button class="pbtn on" data-port="KTP" title="Operate MIDPL — Kattupalli">MIDPL — Kattupalli</button>
         <button class="pbtn" data-port="ENN" title="Operate AECTPL — Ennore">AECTPL — Ennore</button>

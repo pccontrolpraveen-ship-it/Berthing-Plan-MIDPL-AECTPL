@@ -5,8 +5,8 @@
   --inc:#2563EB; --anc:#D97706; --brt:#7C3AED; --opr:#059669; --cmp:#0D9488; --sld:#6B7280; --bad:#DC2626; --ok:#059669;
 }
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,-apple-system,sans-serif}
-body{background:var(--bg);color:var(--ink);height:100vh;overflow:hidden}
-.screen{display:none;height:100vh}.screen.active{display:flex}
+body{background:var(--bg);color:var(--ink);height:100vh;height:100dvh;overflow:hidden}
+.screen{display:none;height:100vh;height:100dvh}.screen.active{display:flex}
 button{cursor:pointer;font-family:inherit}
 
 /* ---------- Splash ---------- */
@@ -21,7 +21,7 @@ button{cursor:pointer;font-family:inherit}
 
 /* ---------- Login / OTP ---------- */
 #login,#otp{background:linear-gradient(160deg,#14243F,#1F3864 60%,#2E5D9F);align-items:center;justify-content:center}
-.authCard{background:#fff;border-radius:16px;padding:34px 38px;width:430px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+.authCard{background:#fff;border-radius:16px;padding:34px 38px;width:min(430px,100%);box-shadow:0 20px 60px rgba(0,0,0,.4)}
 .authCard h2{color:var(--navy);font-size:20px;margin-bottom:4px}
 .authCard .hint{color:var(--ink2);font-size:13px;margin-bottom:20px}
 .roleRow{display:flex;gap:10px;margin-bottom:18px}
@@ -43,6 +43,9 @@ button{cursor:pointer;font-family:inherit}
 
 /* ---------- App shell ---------- */
 #app{flex-direction:row}
+.navToggle{display:none;align-items:center;justify-content:center;background:none;border:1.5px solid var(--line);
+  border-radius:9px;width:38px;height:38px;font-size:18px;color:var(--navy);flex-shrink:0}
+.navScrim{display:none}
 .sidebar{width:224px;background:var(--navy);color:#fff;display:flex;flex-direction:column;flex-shrink:0}
 .sbBrand{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,.12)}
 .sbBrand b{letter-spacing:.12em;font-size:16px}.sbBrand span{color:#7FD1C8;font-size:11px;letter-spacing:.3em;display:block}
@@ -107,7 +110,7 @@ select,input[type=number],input[type=datetime-local],input[type=text]{padding:9p
 select:focus,input:focus{outline:none;border-color:var(--navy2)}
 input:disabled{background:#F4F6FA;color:#8B94A7}
 .combo{position:relative;display:inline-block}
-.combo input{min-width:260px}
+.combo input{min-width:min(260px,100%)}
 .comboList{position:absolute;top:100%;left:0;right:0;background:#fff;border:1.5px solid var(--line);border-radius:9px;margin-top:4px;max-height:230px;overflow:auto;z-index:60;box-shadow:0 10px 30px rgba(0,0,0,.12);display:none}
 .comboList.open{display:block}
 .comboList button{display:block;width:100%;text-align:left;padding:9px 12px;border:none;background:none;font-size:13.5px}
@@ -228,7 +231,7 @@ input:disabled{background:#F4F6FA;color:#8B94A7}
 #sailOverlay p{color:#9FC3E8;z-index:2}
 
 /* ---------- 3D ---------- */
-#twinWrap{position:relative;height:calc(100vh - 132px);border-radius:13px;overflow:hidden;border:1px solid var(--line)}
+#twinWrap{position:relative;height:calc(100vh - 132px);height:calc(100dvh - 132px);min-height:300px;border-radius:13px;overflow:hidden;border:1px solid var(--line)}
 #twinCanvas{width:100%;height:100%;display:block;touch-action:none}
 .twinHud{position:absolute;top:12px;left:12px;display:flex;gap:8px;z-index:5;flex-wrap:wrap;max-width:70%}
 .twinHud button{background:rgba(16,27,48,.85);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:7px 12px;font-size:12px}
@@ -254,11 +257,113 @@ input:disabled{background:#F4F6FA;color:#8B94A7}
 .exportRow{display:flex;gap:8px;margin-bottom:12px}
 .exportRow button{border:1.5px solid var(--line);background:#fff;border-radius:8px;padding:7px 13px;font-size:12.5px;font-weight:600}
 .mut{color:var(--ink2);font-size:12px}
-@media (max-width:860px){
-  .sidebar{width:64px}.sbBrand b,.sbBrand span,.sbUser{display:none}
-  .nav button{justify-content:center;padding:11px 6px}.nav button .nvLb{display:none}
-  .planGrid{grid-template-columns:1fr}.msRow{grid-template-columns:52px 1fr;gap:8px}
+/* ==================== Responsive ====================
+   Three tiers, plus a pointer query that is about the input device rather than
+   the width — a 1280px tablet is touch-driven and still needs 44px targets.
+     ≤1024px  tablet: single-column planning, tighter chrome
+     641–1024 sidebar collapses to an icon rail
+     ≤640px   phone: sidebar becomes an off-canvas drawer, top bar wraps
+   The shell keeps overflow:hidden, so anything genuinely wide — tables, the
+   month timeline, charts — scrolls inside its own box rather than pushing the
+   page sideways where body overflow would clip it out of reach. */
+
+@media (max-width:1024px){
+  .content{padding:16px 14px}
+  .planGrid{grid-template-columns:1fr}
+  .mGrid{grid-template-columns:1fr}
+  .msRow{grid-template-columns:52px 1fr;gap:8px}
   .cargoGrid{grid-template-columns:repeat(2,1fr)}
+  .cbarLbl{width:150px}
+  .topbar{padding:0 14px;gap:10px}
+}
+
+/* Tablet only: the rail. Phones get the drawer instead, below. */
+@media (min-width:641px) and (max-width:1024px){
+  .sidebar{width:64px}
+  .sbBrand b,.sbBrand span,.sbUser{display:none}
+  .nav button{justify-content:center;padding:11px 6px}
+  .nav button .nvLb{display:none}
+}
+
+@media (max-width:640px){
+  /* --- off-canvas navigation: keeps the labels and keeps Log out reachable --- */
+  .navToggle{display:flex}
+  .sidebar{position:fixed;top:0;bottom:0;left:0;width:264px;max-width:82vw;z-index:400;
+    transform:translateX(-100%);transition:transform .22s ease;box-shadow:6px 0 34px rgba(10,18,34,.4);
+    padding-top:env(safe-area-inset-top);padding-bottom:env(safe-area-inset-bottom)}
+  #app.navOpen .sidebar{transform:none}
+  .navScrim{position:fixed;inset:0;background:rgba(10,18,34,.5);z-index:390}
+  #app.navOpen .navScrim{display:block}
+  .nav button{padding:13px 14px}
+
+  /* --- top bar wraps to two rows instead of clipping --- */
+  .topbar{height:auto;min-height:54px;flex-wrap:wrap;padding:8px 12px;gap:8px;
+    padding-top:calc(8px + env(safe-area-inset-top))}
+  .navToggle{order:1}
+  .topbar h3{order:2;flex:1 1 auto;min-width:0;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bell{order:3;flex-shrink:0}
+  .topbar .tbadge{order:4;flex:1 1 100%;min-width:0}
+  .tbadge .pbtn{flex:1 1 0;min-width:0;font-size:11px;padding:8px 6px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .tbChip{order:5;font-size:11px;padding:5px 10px}
+
+  .content{padding:13px 11px;padding-bottom:calc(13px + env(safe-area-inset-bottom))}
+  .card{padding:14px 13px;border-radius:11px}
+
+  /* --- one column for anything that was a fixed multi-column grid --- */
+  .berthStrip,.berthCards{grid-template-columns:1fr}
+  .tiles{gap:10px}
+  .msRow{grid-template-columns:1fr;gap:6px;padding:12px 0}
+  .sliderWrap{width:100%}
+  .sliderWrap .sl{flex:1;width:auto;min-width:0}
+  .slLabel{width:auto}
+  .combo{display:block}
+  .combo input{width:100%}
+  .etaBar{padding:10px 11px;gap:10px}
+
+  /* --- wide content scrolls inside itself, never off the page --- */
+  .content table,.modal table{display:block;max-width:100%;overflow-x:auto;
+    -webkit-overflow-scrolling:touch;white-space:nowrap}
+  .cbarLbl{width:112px;font-size:11px;text-align:left}
+
+  /* --- auth screens on a 360px handset --- */
+  .authCard{padding:24px 18px}
+  .otpRow{gap:6px}
+  .otpRow input{width:42px;height:52px;font-size:20px}
+
+  /* --- 3D twin: the top bar is taller here, so the canvas gets less --- */
+  #twinWrap{height:calc(100vh - 196px);height:calc(100dvh - 196px);min-height:320px}
+  .twinHud{max-width:calc(100% - 24px);gap:6px}
+  .twinHud button{padding:7px 9px;font-size:11px}
+  #shipCard{width:min(250px,calc(100% - 24px));font-size:12px}
+  #tourCap{font-size:12.5px;padding:9px 15px;max-width:calc(100% - 32px)}
+  .legend{font-size:10.5px;padding:8px 10px}
+
+  .toast{left:12px;right:12px;bottom:calc(16px + env(safe-area-inset-bottom));max-width:none}
+  .modal{padding:18px 16px}
+  .mBtns{flex-wrap:wrap}
+  .sailBtn,.saveBtn{width:100%}
+}
+
+/* Input device, not screen size: touch needs targets a fingertip can hit.
+   44px is the Apple HIG / WCAG 2.5.5 minimum and the bollard chips were 36x30. */
+@media (pointer:coarse){
+  .bol{min-width:44px;height:44px;font-size:12.5px}
+  .nav button{min-height:46px}
+  .qc,.tabRow button,.exportRow button,.pbtn,.comboList button{min-height:44px}
+  .roleCard{min-height:64px}
+  .bell,.navToggle{width:44px;height:44px;flex-shrink:0}
+  .linkBtn{min-height:44px}
+  .twinHud button{min-height:44px;min-width:44px}   /* the C1/C2/C3 camera presets are two characters wide */
+  .sbUser button{min-height:44px}
+  .qcPick label{min-height:48px}
+  .tlAddBtn{min-width:48px}
+  .mBtns .ghost,.mBtns .primary{min-height:46px}
+  .sliderWrap .sl{height:8px}
+  .sl::-webkit-slider-thumb{width:22px;height:22px}
+  tr:hover td{background:none}          /* hover states are meaningless on touch */
+  .nav button:hover{background:none;color:#C9D4E8}
+  .nav button.on:hover{background:var(--navy2);color:#fff}
 }
 
 /* ---------- PWA update prompt (created by pwa.js when a new version is waiting) ---------- */

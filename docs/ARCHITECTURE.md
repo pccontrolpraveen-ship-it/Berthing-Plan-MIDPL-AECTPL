@@ -12,7 +12,9 @@ A zero-dependency browser application. No server, no build step, no installation
 ┌───────────────────────── Browser (Chrome / Edge) ─────────────────────────┐
 │                                                                           │
 │  www/index.html  structure: splash · login · OTP · app shell              │
-│  styles.css      all presentation (sidebar, tiles, timeline, chips…)      │
+│  www/styles.css  all presentation (sidebar, tiles, timeline, chips…)      │
+│                  responsive: ≤1024 tablet · ≤640 phone drawer · coarse    │
+│                  pointer gets 44px targets regardless of width            │
 │  app.js          ┌──────────────────────────────────────────────────┐     │
 │                  │ reference data   berths · cranes · bollard pools │     │
 │                  │ state            vessels[] · voyages[] · audit[] │     │

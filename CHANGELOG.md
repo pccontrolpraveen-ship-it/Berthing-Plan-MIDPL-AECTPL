@@ -4,6 +4,27 @@ All notable changes to PORTVISION 3D. Format loosely follows [Keep a Changelog](
 
 ---
 
+## [2.7] — 2026-08-24
+
+### Changed — the application is now usable on a phone (phase 3)
+- **Responsive layout across three tiers.** Previously one breakpoint at 860px shrank the sidebar to an icon rail and nothing else, so on a handset the top bar ran off the side of the screen. Because the shell is `overflow:hidden` — a fixed application frame, not a scrolling document — that content was not merely awkward, it was **unreachable**. Every view now fits at 390px with nothing clipped.
+- **Off-canvas navigation on phones.** Below 640px the sidebar becomes a drawer opened from a top-bar button, with a scrim and Escape to close. This keeps the nav **labels** (the old icon rail dropped them) and keeps **Log out** reachable, both of which a 64px rail lost. Tablets keep the rail; desktop is untouched.
+- **The top bar wraps instead of clipping** — menu, title and bell on the first row, the port selector and status chips below, with the port buttons sharing the width.
+- **Touch targets meet the 44px floor** (WCAG 2.5.5 / Apple HIG) on any coarse-pointer device regardless of screen width, since a large tablet is still finger-driven. The bollard chips were the worst offenders at 36x30 — they are the primary planning control and were effectively unusable on a touch screen.
+- **Wide content scrolls inside its own box.** Report and modal tables become horizontally scrollable on narrow screens rather than pushing the page sideways where the shell would clip them away.
+- **Dynamic viewport height.** `100vh` counts the mobile URL bar that is not actually visible, cutting off the bottom of the shell; the layout now uses `100dvh` with `100vh` retained as the fallback. Safe-area insets are honoured for notched handsets, and the viewport meta opts in with `viewport-fit=cover`.
+- **The 3D twin picks its own quality.** A coarse pointer or a small screen now starts the twin with shadow maps off, pixel ratio 1 and a wider field of view — the settings that decide whether the twin runs or crawls on a phone GPU. It was a manual button nobody would find; the button still overrides it.
+
+### Fixed
+- **Report exports work in a packaged app.** The PDF path called `window.open`, which is blocked outright in an installed PWA and in every Capacitor/Electron web view, and was silently eaten by pop-up blockers before that; it now prints from a hidden same-page iframe. The CSV path relied on a download link, which does nothing in an iOS web view; it now offers the platform share sheet where one exists and falls back to the download only where that genuinely works.
+
+### Tests
+- New suite `tests/test_responsive.js` (28 checks): runs the whole application at phone, tablet and desktop with a real voyage planned first, and asserts nothing is clipped, the drawer behaves, every touch target clears 44px, and the twin auto-selects mobile quality. The overflow probe ignores anything inside a box that scrolls on its own, so it fails only on overflow an operator could never reach. Wired into CI as a third release gate.
+- `test_app.js` gained T7b, covering both export paths — the CSV download and the print iframe — which had never been exercised.
+- All three suites: ERRORS: none.
+
+---
+
 ## [2.6] — 2026-08-24
 
 ### Added — installable progressive web app (phase 1)
