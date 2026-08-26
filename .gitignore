@@ -38,3 +38,15 @@ Thumbs.db
 desktop.ini
 *.swp
 *~
+
+# ── Native mobile build output (Capacitor) ────────────────
+# The android/ and ios/ projects ARE committed — they hold native configuration
+# you edit. Only their build output and the web payload cap sync regenerates are
+# ignored; each platform's own .gitignore covers the rest.
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/.gradle/
+android/local.properties
+ios/App/App/public/
+ios/App/Pods/
+ios/App/output/

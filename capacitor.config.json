@@ -1,0 +1,29 @@
+{
+  "appId": "in.adaniports.portvision3d",
+  "appName": "PORTVISION 3D",
+  "webDir": "www",
+  "backgroundColor": "#14243FFF",
+  "android": {
+    "backgroundColor": "#14243FFF",
+    "allowMixedContent": false,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  },
+  "ios": {
+    "backgroundColor": "#14243FFF",
+    "contentInset": "always",
+    "limitsNavigationsToAppBoundDomains": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 800,
+      "backgroundColor": "#14243F",
+      "showSpinner": false,
+      "androidScaleType": "CENTER_CROP"
+    },
+    "StatusBar": {
+      "style": "LIGHT",
+      "backgroundColor": "#1F3864"
+    }
+  }
+}

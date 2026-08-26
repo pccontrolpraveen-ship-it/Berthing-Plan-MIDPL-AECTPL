@@ -13,6 +13,23 @@
   if (location.protocol === 'file:') return;          // opened from disk
   if (!('serviceWorker' in navigator)) return;        // unsupported browser
 
+  /* Inside a Capacitor build the worker is not just redundant, it is harmful.
+     Android serves the app from https://localhost, so registration succeeds —
+     and the precached shell then outlives an app update, serving the previous
+     version's assets from cache while the store believes the user is updated.
+     The assets are already on the device; there is nothing to cache. Any worker
+     left by an earlier build is torn down along with its caches. */
+  var cap = window.Capacitor;
+  if (cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform()) {
+    navigator.serviceWorker.getRegistrations().then(function (regs) {
+      regs.forEach(function (r) { r.unregister(); });
+      if (window.caches && caches.keys) {
+        caches.keys().then(function (keys) { keys.forEach(function (k) { caches.delete(k); }); });
+      }
+    }).catch(function () { /* nothing registered — nothing to undo */ });
+    return;
+  }
+
   /* An update is ready but deliberately not applied: the planning screen can
      hold unsaved work, so the planner decides when to reload. */
   function offerUpdate(worker) {

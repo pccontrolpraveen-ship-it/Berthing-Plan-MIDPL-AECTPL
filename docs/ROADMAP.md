@@ -62,6 +62,7 @@ Indicative effort for one person working evenings with AI assistance: steps 0–
 **Later**
 
 - AECTPL Ennore — reference data plus its own 3D layout; the data model is already multi-terminal
+- ~~Native store builds~~ — Capacitor projects for iOS and Android landed in 2.9 (`docs/MOBILE.md`); what remains before submission is authentication, step 3 above, not packaging
 - ~~Installable app for marine users on the quay~~ — delivered in 2.6 as a progressive web app: installable on Android, Windows and macOS, added to the Home Screen on iOS, and launching with no network. The responsive rework that gated it landed in 2.7 and the Electron desktop build in 2.8, so the remaining wrapper work is Capacitor for the iOS and Android store builds
 - TOS / EDI integration (BAPLIE, COARRI) to remove manual cargo entry
 - Weather feed on the dashboard

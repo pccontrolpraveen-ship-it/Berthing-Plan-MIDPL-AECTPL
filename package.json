@@ -1,7 +1,7 @@
 {
   "name": "portvision-3d",
   "productName": "PORTVISION 3D",
-  "version": "2.8.0",
+  "version": "2.9.0",
   "description": "Vessel berthing planning and port operations for MIDPL Kattupalli and AECTPL Ennore, with a live 3D digital twin.",
   "main": "desktop/main.js",
   "private": true,
@@ -18,9 +18,21 @@
     "desktop:win": "electron-builder --win",
     "desktop:mac": "electron-builder --mac",
     "desktop:linux": "electron-builder --linux",
-    "icons": "node tools/make-icons.js"
+    "icons": "node tools/make-icons.js",
+    "test:mobile": "node tests/test_mobile.js",
+    "mobile:sync": "npx cap sync",
+    "mobile:android": "npx cap open android",
+    "mobile:ios": "npx cap open ios",
+    "mobile:assets": "npx @capacitor/assets generate --iconBackgroundColor '#1F3864' --iconBackgroundColorDark '#14243F' --splashBackgroundColor '#14243F' --splashBackgroundColorDark '#14243F'"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/app": "^8.1.1",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
+    "@capacitor/splash-screen": "^8.0.2",
+    "@capacitor/status-bar": "^8.0.3",
     "cors": "^2.8.5",
     "express": "^4.19.0",
     "pg": "^8.12.0"
@@ -45,9 +57,18 @@
       "server/schema.sql",
       "package.json"
     ],
-    "asarUnpack": ["server/**"],
+    "asarUnpack": [
+      "server/**"
+    ],
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "desktop/assets/icon.png"
     },
     "nsis": {
@@ -57,7 +78,14 @@
       "shortcutName": "PORTVISION 3D"
     },
     "mac": {
-      "target": [{ "target": "dmg" }, { "target": "zip" }],
+      "target": [
+        {
+          "target": "dmg"
+        },
+        {
+          "target": "zip"
+        }
+      ],
       "category": "public.app-category.business",
       "icon": "desktop/assets/icon.png",
       "hardenedRuntime": true,
@@ -66,7 +94,9 @@
       "entitlementsInherit": "desktop/assets/entitlements.mac.plist"
     },
     "linux": {
-      "target": ["AppImage"],
+      "target": [
+        "AppImage"
+      ],
       "category": "Office",
       "icon": "desktop/assets/icon.png"
     }

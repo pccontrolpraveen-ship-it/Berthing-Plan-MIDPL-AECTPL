@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  NOT ACTIVE. This file is a template; nothing references it until you add
+
+      android:networkSecurityConfig="@xml/network_security_config"
+
+  to the <application> tag in AndroidManifest.xml.
+
+  Why it exists: Capacitor serves the app from https://localhost, and Android
+  has blocked cleartext traffic by default since API 28. A PortVision server
+  reached over plain http:// therefore fails silently — the app simply reports
+  Standalone. An https server needs none of this and is the right answer for
+  anything beyond a pilot.
+
+  If a pilot must run against a plain-http server on the terminal LAN, list that
+  host below and nothing else. Do not set cleartextTrafficPermitted on a base
+  config: the persistence API carries no authentication, so berthing plans would
+  cross the network in the clear and be modifiable by anyone who can reach the
+  port. Also set "allowMixedContent": true under "android" in
+  capacitor.config.json, or the https origin will block the request first.
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Replace with the pilot server's hostname or IP. -->
+        <domain includeSubdomains="false">portvision.lan</domain>
+    </domain-config>
+</network-security-config>

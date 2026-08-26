@@ -191,7 +191,9 @@ const store={
   get(k){try{return localStorage.getItem(k);}catch(e){return null;}},
   set(k,v){try{localStorage.setItem(k,v);return true;}catch(e){return false;}}
 };
-const API_BASE=(store.get('pv_api')||'http://localhost:4000')+'/api';
+const DEFAULT_API='http://localhost:4000';
+const apiOrigin=()=>store.get('pv_api')||DEFAULT_API;
+let API_BASE=apiOrigin()+'/api';
 let dbMode='standalone',dbErr=null;
 async function api(path,opt){
   const r=await fetch(API_BASE+path,Object.assign({headers:{'Content-Type':'application/json'}},opt||{}));
@@ -207,6 +209,54 @@ function updateDbBadge(){
     :'PortVision server not reachable — data is saved in THIS BROWSER only (survives refresh on this machine). Run server/ from the repository for PostgreSQL storage.'+(dbErr?' Last error: '+dbErr:'');
   el.style.background=dbMode==='postgres'?'#DCFCE7':'#FEF3C7';
   el.style.color=dbMode==='postgres'?'#046B4A':'#92400E';
+  el.title+=' — tap to change the server address.';
+}
+
+/* ---- Server connection ----
+   Packaged builds have no address bar and no developer tools, so the server
+   address has to be reachable from inside the application. On a phone the
+   default of localhost is meaningless — localhost is the handset — which made
+   PostgreSQL storage unreachable from a mobile build until this existed. */
+function serverModal(){
+  const cur=apiOrigin();
+  openModal(`<h3>🗄 Server connection</h3>
+    <p class="mut" style="margin-bottom:12px">
+      ${dbMode==='postgres'
+        ? 'Connected — vessels and voyages are stored in PostgreSQL and shared between users.'
+        : 'Not connected. Data is saved on this device only.'}
+      ${dbErr?'<br><b>Last error:</b> '+esc(dbErr):''}
+    </p>
+    <div class="fld">
+      <label for="srvUrl">PortVision server address</label>
+      <input id="srvUrl" type="text" value="${esc(cur)}" placeholder="https://portvision.example.com" spellcheck="false" autocapitalize="off">
+    </div>
+    <p class="mut">Include the scheme and, if it is not the default, the port —
+      for example <b>https://portvision.example.com</b> or <b>http://192.168.1.20:4000</b>.
+      On a phone or tablet <b>localhost</b> refers to the device itself, so a real
+      hostname or IP address is required.</p>
+    <div class="mBtns">
+      <button class="ghost" id="srvStandalone">Work standalone</button>
+      <button class="ghost" id="srvCancel">Cancel</button>
+      <button class="primary" id="srvSave">Save &amp; connect</button>
+    </div>`);
+  $('#srvCancel').onclick=closeModal;
+  $('#srvStandalone').onclick=async()=>{
+    store.set('pv_api','');API_BASE=DEFAULT_API+'/api';
+    closeModal();dbMode='standalone';dbErr=null;updateDbBadge();
+    toast('Working standalone — data is saved on this device only');
+  };
+  $('#srvSave').onclick=async()=>{
+    let v=$('#srvUrl').value.trim().replace(/\/+$/,'');
+    if(!v){toast('Enter a server address, or choose Work standalone',true);return;}
+    if(!/^https?:\/\//i.test(v)){toast('The address must start with http:// or https://',true);return;}
+    try{new URL(v);}catch(e){toast('That is not a valid address',true);return;}
+    store.set('pv_api',v);API_BASE=v+'/api';
+    closeModal();toast('Connecting to '+v+' …');
+    await initPersistence();
+    toast(dbMode==='postgres'
+      ? '✔ Connected — storing in PostgreSQL'
+      : '⚠ Could not reach '+v+(dbErr?': '+dbErr:'')+' — still working standalone',dbMode!=='postgres');
+  };
 }
 async function persistVessel(rec,isEdit){
   if(dbMode==='postgres'){
@@ -266,6 +316,11 @@ let planSnap=null, planDirty=false, planSnapId=null, tlExtraDays=0;
 
 /* ============================== HELPERS ============================== */
 const $ = s => document.querySelector(s);
+/* Screens are rendered by assigning template strings to innerHTML, so any value
+   that came from a person has to be escaped on the way back out. */
+const esc = v => String(v == null ? '' : v)
+  .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 /* Phones and tablets get the lighter 3D pipeline by default — shadow maps and a
    2x pixel ratio are what make the twin crawl on mobile GPUs. Still overridable
    from the twin's own Desktop/Mobile button. */
@@ -435,6 +490,8 @@ $('#verifyOtp').onclick=()=>{
 };
 $('#logout').onclick=()=>{setNav(false);user=null;document.querySelectorAll('#otpRow input').forEach(i=>i.value='');show('login');};
 $('#bellBtn').onclick=()=>go('notifications');
+$('#dbBadge').onclick=()=>serverModal();
+$('#dbBadge').style.cursor='pointer';
 const isAdmin=()=>user&&user.role==='Admin';
 const canPlan=()=>user&&(user.role==='Vessel Planner'||user.role==='Admin');
 
@@ -447,6 +504,48 @@ const NAVS=[
   {id:'notifications',lb:'Notifications', ic:'🔔', roles:['Vessel Planner','Manager','Admin']},
   {id:'admin',     lb:'Administration', ic:'🛡️', roles:['Admin']},
 ];
+/* ---- Native shell (Capacitor) ----
+   Capacitor exposes installed plugins on window.Capacitor.Plugins at runtime, so
+   they are reachable from a plain script with no bundler. Everything here is
+   guarded: in a browser, in the PWA and in Electron none of it exists and the
+   app behaves exactly as before. */
+const nativeShell=()=>{
+  const C=window.Capacitor;
+  return C&&typeof C.isNativePlatform==='function'&&C.isNativePlatform()?C:null;
+};
+const nativePlugin=name=>{
+  const C=nativeShell();
+  return C&&C.Plugins&&C.Plugins[name]?C.Plugins[name]:null;
+};
+
+function initNativeShell(){
+  if(!nativeShell())return;
+
+  /* Android's hardware back button quits the app by default, which would throw
+     away an unsaved berthing plan without warning. Unwind the UI instead, and
+     only leave from the dashboard. */
+  const appPlugin=nativePlugin('App');
+  if(appPlugin&&appPlugin.addListener){
+    appPlugin.addListener('backButton',()=>{
+      if($('#modalWrap').classList.contains('show')){if(!modalLock)closeModal();return;}
+      if($('#app').classList.contains('navOpen')){setNav(false);return;}
+      if(!user){appPlugin.exitApp&&appPlugin.exitApp();return;}
+      if(view!=='dashboard'){go('dashboard');return;}
+      appPlugin.exitApp&&appPlugin.exitApp();
+    });
+  }
+
+  /* Match the status bar to the top bar rather than leaving it default-white
+     over a navy drawer. */
+  const bar=nativePlugin('StatusBar');
+  if(bar){
+    bar.setStyle&&bar.setStyle({style:'LIGHT'});
+    bar.setBackgroundColor&&bar.setBackgroundColor({color:'#1F3864'});
+  }
+}
+
+initNativeShell();
+
 /* Navigation drawer. On phones the sidebar is off-canvas — see styles.css — so
    the whole nav keeps its labels instead of collapsing to an icon rail, and
    Log out stays reachable. Above the breakpoint the drawer class does nothing. */

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PORTVISION 3D</string>
+    <string name="title_activity_main">PORTVISION 3D</string>
+    <string name="package_name">in.adaniports.portvision3d</string>
+    <string name="custom_url_scheme">in.adaniports.portvision3d</string>
+</resources>

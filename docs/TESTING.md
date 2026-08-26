@@ -12,6 +12,7 @@ npx playwright install chromium
 node tests/test_app.js         # application regression suite
 node tests/test_pwa.js         # manifest, service worker, offline launch
 node tests/test_responsive.js  # phone / tablet / desktop layout, touch targets
+node tests/test_mobile.js      # Capacitor native web view behaviour
 node tests/test_desktop.js     # Electron desktop build
 ```
 
@@ -168,6 +169,40 @@ that it never claims a save it did not make, and a desktop build that starts its
 own backend is the easiest place for that to quietly break: the API is running,
 so it looks healthy, while the database behind it is not. The check configures a
 database that cannot answer and asserts the badge still says Standalone.
+
+---
+
+## Mobile checks — `tests/test_mobile.js`
+
+Building an `.apk` or `.ipa` needs the Android SDK or Xcode, neither of which
+exists in CI, so this suite does not attempt it. It covers the part that is
+ours rather than the toolchain's: what the web layer must get right to survive
+inside a native web view.
+
+Capacitor injects `window.Capacitor` before the page scripts run and exposes
+plugins on `Capacitor.Plugins`. Both are reproduced with `addInitScript` — the
+same insertion point — so the code under test runs as it would on a device and
+every call it makes is recorded. `www/` is served over `http://127.0.0.1`
+because Capacitor serves from a real origin, and the service-worker behaviour
+under test only exists on one.
+
+| Block | Verifies |
+|---|---|
+| M1 | Both native payloads carry the whole app **including the vendored Three.js**; cleartext stays disabled in the committed `AndroidManifest.xml` and `Info.plist` |
+| M2 | A service worker left by an earlier build is unregistered and its caches cleared |
+| M3 | The Android back button unwinds modal → drawer → dashboard before quitting |
+| M4 | The server-address dialog validates, stores and reconnects |
+| M5 | None of it leaks into the browser build, where the service worker still registers |
+
+M2 is the subtle one. Android serves the app from `https://localhost`, so a
+service worker **does** register there. Its cache-first shell would then outlive
+an app update — serving the previous version's assets while the store believed
+the user was current. The packaged build therefore tears down any worker and
+cache it finds, and the test drives that exact upgrade path: register a worker,
+then reload with the native bridge present and assert both are gone.
+
+A green run means *the web layer is correct for a web view*. It does not mean
+the projects compile or that a store build succeeds — see `docs/MOBILE.md`.
 
 ---
 

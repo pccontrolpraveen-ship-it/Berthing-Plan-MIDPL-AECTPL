@@ -4,6 +4,30 @@ All notable changes to PORTVISION 3D. Format loosely follows [Keep a Changelog](
 
 ---
 
+## [2.9] — 2026-08-24
+
+### Added — iOS and Android builds (phase 4)
+- **Capacitor projects for both platforms** (`android/`, `ios/`), wrapping the same `www/` folder the browser, the PWA and the Electron desktop build already load. No second implementation, no build step. `npx cap sync` copies the web payload in; both native projects are committed because they hold native configuration you edit, while the copied payload is gitignored because it is output.
+- **App icons and splash screens for every Android density and iOS idiom**, expanded by `@capacitor/assets` from the same vector definition in `tools/make-icons.js` that already produced the PWA and desktop icons. One source of truth for the mark across four distribution channels.
+- **A way to set the server address from inside the app.** The app defaults to `http://localhost:4000`; on a handset **localhost is the handset**, so PostgreSQL storage was unreachable from a mobile build — and a packaged app has no address bar and no developer tools to change it from. Tapping the storage badge now opens a validated server-address dialog that reconnects immediately. It works in the browser and on the desktop too.
+- **Android back button handling.** The default is to quit the app, which would silently discard an unsaved berthing plan behind the dirty-state guard. Back now unwinds the UI — modal, then drawer, then back to the dashboard — and only leaves from there.
+- **Status bar and splash** themed to the top bar rather than left default-white above a navy drawer.
+- **`docs/MOBILE.md`** — build steps, the cleartext/mixed-content trap in full, and a store submission checklist that leads with the blocker rather than burying it.
+
+### Fixed
+- **A service worker would have masked app updates on Android.** Capacitor serves from `https://localhost`, so `www/sw.js` registers there — and its cache-first shell would outlive an app update, serving the previous version's assets while the Play Store believed the user was current. Packaged builds now unregister any worker they find and clear its caches. The browser and PWA are unaffected.
+
+### Security posture
+- Cleartext HTTP stays blocked on both platforms. `allowMixedContent` is `false`, the Android manifest sets no `usesCleartextTraffic`, and `Info.plist` carries no ATS exception. A ready-to-enable `network_security_config.xml` template is committed **unreferenced**, scoped to a single host, for a pilot that must run against a plain-http LAN server. Both defaults are asserted by the test suite so they cannot be loosened unnoticed.
+- Remote web-contents debugging is off.
+
+### Tests
+- New suite `tests/test_mobile.js` (23 checks). Capacitor's bridge is reproduced through `addInitScript` — the same insertion point Capacitor uses — so the code under test runs as it would on a device and every native call it makes is recorded. Covers the payload contents, the cleartext defaults, the service-worker teardown driven through a real register-then-upgrade path, the back button, the server dialog, and that none of it leaks into the browser build. Wired into CI as a fifth release gate.
+- **Not covered:** that the projects compile, that an `.aab` or `.ipa` builds, signing, or store review — all need the Android SDK or Xcode. A green run means the web layer is correct for a web view, and `docs/MOBILE.md` says so explicitly.
+- All five suites: ERRORS: none.
+
+---
+
 ## [2.8] — 2026-08-24
 
 ### Added — Windows / macOS / Linux desktop build (phase 2)

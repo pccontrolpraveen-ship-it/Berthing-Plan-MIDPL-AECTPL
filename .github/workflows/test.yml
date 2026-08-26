@@ -22,6 +22,7 @@ jobs:
           node --check www/app.js
           node --check www/sw.js
           node --check www/pwa.js
+          node -e "JSON.parse(require('fs').readFileSync('capacitor.config.json','utf8'))"
           node -e "JSON.parse(require('fs').readFileSync('www/manifest.webmanifest','utf8'))"
 
       - name: Install dependencies
@@ -49,6 +50,20 @@ jobs:
             echo "Offline launch verified."
           else
             echo "PWA checks reported errors:"; tail -5 pwa.txt; exit 1
+          fi
+
+      - name: Sync the native mobile projects
+        run: npx cap sync
+
+      - name: Run mobile (Capacitor) checks
+        run: node tests/test_mobile.js | tee mobile.txt
+
+      - name: Fail if the mobile checks reported errors
+        run: |
+          if grep -q "ERRORS: none" mobile.txt; then
+            echo "Native web-view behaviour verified."
+          else
+            echo "Mobile checks reported errors:"; tail -8 mobile.txt; exit 1
           fi
 
       - name: Run responsive and touch checks

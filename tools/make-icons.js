@@ -24,9 +24,9 @@ const anchor = color => `
 
 /* purpose="any": rounded square, the shape desktop taskbars and Android legacy icons expect.
    purpose="maskable": full bleed, mark shrunk into the centre 80% safe zone. */
-function svg(size, { maskable = false, radiusPct = 22 } = {}) {
+function svg(size, { maskable = false, radiusPct = 22, markScale = null } = {}) {
   const r = maskable ? 0 : (size * radiusPct) / 100;
-  const scale = maskable ? 0.62 : 0.74;
+  const scale = markScale != null ? markScale : (maskable ? 0.62 : 0.74);
   const off = (100 - 100 * scale) / 2;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
     <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
@@ -47,6 +47,15 @@ const TARGETS = [
   /* electron-builder derives the Windows .ico and the macOS .icns from a single
      1024px source, so the desktop build needs no separate icon pipeline. */
   { file: 'icon.png', size: 1024, opts: {}, dir: ['desktop', 'assets'] },
+  /* @capacitor/assets expands these into every Android density bucket and every
+     iOS idiom, so the mobile builds share this one definition too. */
+  { file: 'icon.png', size: 1024, opts: {}, dir: ['assets'] },
+  { file: 'icon-foreground.png', size: 1024, opts: { maskable: true }, dir: ['assets'] },
+  { file: 'icon-background.png', size: 1024, opts: { markScale: 0, radiusPct: 0 }, dir: ['assets'] },
+  /* Splash screens are one square that both platforms crop to any aspect ratio,
+     so the mark sits small and centred and survives every crop. */
+  { file: 'splash.png', size: 2732, opts: { markScale: 0.22, radiusPct: 0 }, dir: ['assets'] },
+  { file: 'splash-dark.png', size: 2732, opts: { markScale: 0.22, radiusPct: 0 }, dir: ['assets'] },
 ];
 
 (async () => {
