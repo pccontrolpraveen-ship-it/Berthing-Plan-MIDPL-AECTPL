@@ -24,7 +24,8 @@
     "mobile:android": "npx cap open android",
     "mobile:ios": "npx cap open ios",
     "mobile:assets": "npx @capacitor/assets generate --iconBackgroundColor '#1F3864' --iconBackgroundColorDark '#14243F' --splashBackgroundColor '#14243F' --splashBackgroundColorDark '#14243F'",
-    "test:auth": "node tests/test_auth.js"
+    "test:auth": "node tests/test_auth.js",
+    "standalone": "node tools/make-standalone.js"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",
@@ -41,7 +42,7 @@
   "devDependencies": {
     "electron": "^33.0.0",
     "electron-builder": "^25.0.0",
-    "playwright": "^1.47.0"
+    "playwright": "^1.62.1"
   },
   "build": {
     "appId": "in.adaniports.portvision3d",
