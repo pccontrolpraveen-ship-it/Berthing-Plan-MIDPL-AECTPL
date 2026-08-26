@@ -9,6 +9,10 @@ const APP_URL = 'file://' + path.resolve(__dirname, '..', 'www', 'index.html');
   const errors = [];
   require('fs').mkdirSync(path.resolve(__dirname, '..', 'shots'), { recursive: true });
   page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message));
+  /* The app probes http://localhost:4000 for a PortVision server. This suite
+     covers standalone behaviour, so block that origin outright — otherwise the
+     result depends on whether a developer happens to have the server running. */
+  await page.route('http://localhost:4000/**', r => r.abort());
   await page.goto(APP_URL);
   await page.waitForTimeout(2200);
   await page.click('.roleCard[data-role="Vessel Planner"]');

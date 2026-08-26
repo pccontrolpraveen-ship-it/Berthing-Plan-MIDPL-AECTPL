@@ -1,6 +1,6 @@
 # PORTVISION 3D — mobile builds (iOS / Android)
 
-Version 2.9 · Capacitor 8
+Version 2.10 · Capacitor 8
 
 The iOS and Android apps are the **same `www/` folder** the browser, the PWA and
 the Electron desktop build all load. There is no second implementation and no
@@ -87,23 +87,30 @@ If a pilot genuinely must run against plain http on the terminal LAN:
 - **iOS** — add an `NSAppTransportSecurity` → `NSExceptionDomains` entry for that
   host in `ios/App/App/Info.plist`.
 
-Scope both to the one host. Do **not** enable cleartext globally: the persistence
-API carries no authentication (see below), so berthing plans would cross the
-network readable and modifiable by anyone who can reach the port.
+Scope both to the one host, and never enable cleartext globally. The API now
+requires authentication, but over plain http the access token travels in the
+clear on every request — anyone on the terminal LAN can lift it and act as that
+planner until it expires.
 
 ---
 
 ## Before you submit to either store
 
-**Blocking — authentication.** The OTP is the hardcoded literal `'123456'`
-compared in client-side JavaScript (`www/app.js`), the role is self-selected at
-login, and the API has `cors()` open with no authentication on any endpoint.
-This is fine for a prototype opened from a file. It is not something to publish
-under the Adani name to a public app store, and App Store review routinely
-rejects demo-credential builds. This is `docs/ROADMAP.md` step 3 and it is not a
-packaging task — it has to be decided before a submission, not after.
+**Authentication is in place** as of 2.10 (`docs/AUTH.md`): the code is
+generated and verified server-side and the role comes from the account. Two
+things still have to be done before a store build, and neither is packaging:
 
-Once that is resolved:
+- **Configure a real OTP transport.** The default `log` transport prints the
+  code to the server log. A submitted build pointed at a server in that state
+  cannot deliver codes to anyone.
+- **Give the server HTTPS**, both because cleartext is blocked on both platforms
+  (above) and because tokens cross that connection.
+
+A build pointed at a server with no accounts, or at no server at all, falls back
+to the standalone local demo. Reviewers will see the demo label — decide
+deliberately whether that is what you want submitted.
+
+Then:
 
 | | Android (Play) | iOS (App Store) |
 |---|---|---|

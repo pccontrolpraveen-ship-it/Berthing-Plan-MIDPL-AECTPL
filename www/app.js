@@ -195,11 +195,63 @@ const DEFAULT_API='http://localhost:4000';
 const apiOrigin=()=>store.get('pv_api')||DEFAULT_API;
 let API_BASE=apiOrigin()+'/api';
 let dbMode='standalone',dbErr=null;
-async function api(path,opt){
-  const r=await fetch(API_BASE+path,Object.assign({headers:{'Content-Type':'application/json'}},opt||{}));
+/* ---- session ----
+   The access token is short-lived and the refresh token is rotated on every use,
+   so the pair in browser storage is worth far less than a permanent credential.
+   It is still storage the page itself can read: the app renders through
+   innerHTML, which is why every value that came from a person goes through
+   esc() on the way out. */
+let session=null;                                   /* {accessToken,refreshToken,user} */
+let authRequired=false;                             /* server says sign-in is needed */
+function loadSession(){
+  try{const raw=store.get('pv_session');session=raw?JSON.parse(raw):null;}catch(e){session=null;}
+  return session;
+}
+function saveSession(s){
+  session=s;
+  if(s)store.set('pv_session',JSON.stringify(s));else store.set('pv_session','');
+}
+loadSession();
+
+async function rawApi(path,opt,token){
+  const headers=Object.assign({'Content-Type':'application/json'},(opt&&opt.headers)||{});
+  if(token)headers.Authorization='Bearer '+token;
+  const r=await fetch(API_BASE+path,Object.assign({},opt||{},{headers}));
   let j=null;try{j=await r.json();}catch(e){}
-  if(!r.ok)throw new Error((j&&j.error)||('HTTP '+r.status));
+  if(!r.ok){const err=new Error((j&&j.error)||('HTTP '+r.status));err.status=r.status;err.body=j;throw err;}
   return j;
+}
+
+/* Refresh once, then retry. A second failure means the session is genuinely
+   over — say so and return to the login screen rather than silently dropping
+   the operator's edits into a void. */
+let _refreshing=null;
+async function refreshSession(){
+  if(!session||!session.refreshToken)throw new Error('no session');
+  if(!_refreshing){
+    _refreshing=rawApi('/auth/refresh',{method:'POST',body:JSON.stringify({refreshToken:session.refreshToken})})
+      .then(r=>{saveSession({accessToken:r.accessToken,refreshToken:r.refreshToken,user:r.user});return r;})
+      .finally(()=>{_refreshing=null;});
+  }
+  return _refreshing;
+}
+
+async function api(path,opt){
+  const token=session?session.accessToken:null;
+  try{
+    return await rawApi(path,opt,token);
+  }catch(e){
+    if(e.status===401&&session&&session.refreshToken&&path.indexOf('/auth/')!==0){
+      try{
+        const r=await refreshSession();
+        return await rawApi(path,opt,r.accessToken);
+      }catch(e2){
+        forceSignOut('Your session has expired — sign in again.');
+        throw e2;
+      }
+    }
+    throw e;
+  }
 }
 function updateDbBadge(){
   const el=$('#dbBadge');if(!el)return;
@@ -253,6 +305,13 @@ function serverModal(){
     store.set('pv_api',v);API_BASE=v+'/api';
     closeModal();toast('Connecting to '+v+' …');
     await initPersistence();
+    /* The mode may have flipped, and with it whether a real sign-in is needed. */
+    if(typeof paintLogin==='function')paintLogin();
+    if(dbMode==='postgres'&&authRequired&&(!session||!user)){
+      toast('✔ Connected — sign in with your registered mobile number');
+      if(typeof signOut==='function')signOut();
+      return;
+    }
     toast(dbMode==='postgres'
       ? '✔ Connected — storing in PostgreSQL'
       : '⚠ Could not reach '+v+(dbErr?': '+dbErr:'')+' — still working standalone',dbMode!=='postgres');
@@ -286,24 +345,41 @@ function schedulePersist(){
     }
   },500);
 }
+/* Vessels and voyages now require a signed-in user, so loading them is no longer
+   part of the startup probe — it happens once sign-in has actually succeeded. */
+function loadLocalData(){
+  const sv=store.get('pv_vessels');if(sv)try{const a=JSON.parse(sv);if(a.length)vessels.splice(0,vessels.length,...a);}catch(_){}
+  const so=store.get('pv_voyages');if(so)try{voyages.splice(0,voyages.length,...JSON.parse(so));}catch(_){}
+  const sq=store.get('pv_viaSeq');if(sq)viaSeq=Math.max(viaSeq,+sq||viaSeq);
+}
+async function loadServerData(){
+  let vs=await api('/vessels');
+  if(!vs.length){
+    /* First run against an empty database: seed the vessel master. Managers are
+       read-only, so a failure here is not fatal — the master simply stays as
+       shipped until a Planner or Admin signs in. */
+    try{await api('/vessels/seed',{method:'POST',body:JSON.stringify(vessels)});vs=await api('/vessels');}
+    catch(e){vs=[];}
+  }
+  if(vs.length)vessels.splice(0,vessels.length,...vs);
+  const vy=await api('/voyages');
+  voyages.splice(0,voyages.length,...vy);
+  viaSeq=Math.max(viaSeq,voyages.reduce((a,v)=>Math.max(a,(+v.via||0)+1),viaSeq));
+  twinDirty=true;
+}
 async function initPersistence(){
   try{
-    await api('/health');
-    dbMode='postgres';
-    let vs=await api('/vessels');
-    if(!vs.length){await api('/vessels/seed',{method:'POST',body:JSON.stringify(vessels)});vs=await api('/vessels');}
-    if(vs.length)vessels.splice(0,vessels.length,...vs);
-    const vy=await api('/voyages');
-    voyages.splice(0,voyages.length,...vy);
-    viaSeq=Math.max(viaSeq,voyages.reduce((a,v)=>Math.max(a,(+v.via||0)+1),viaSeq));
+    await rawApi('/health');
+    dbMode='postgres';dbErr=null;
+    try{const cfg=await rawApi('/auth/config');authRequired=!!cfg.authRequired;knownUsers=cfg.users;}
+    catch(e){authRequired=false;}
   }catch(e){
-    dbMode='standalone';dbErr=e.message;
-    const sv=store.get('pv_vessels');if(sv)try{const a=JSON.parse(sv);if(a.length)vessels.splice(0,vessels.length,...a);}catch(_){}
-    const so=store.get('pv_voyages');if(so)try{voyages.splice(0,voyages.length,...JSON.parse(so));}catch(_){}
-    const sq=store.get('pv_viaSeq');if(sq)viaSeq=Math.max(viaSeq,+sq||viaSeq);
+    dbMode='standalone';dbErr=e.message;authRequired=false;
+    loadLocalData();
   }
   updateDbBadge();twinDirty=true;if(user)render();
 }
+let knownUsers=null;
 initPersistence();
 const craneBerthOf = q => (cranes.find(c=>c.id===q)||{}).berth;
 let viaSeq = 2600001;
@@ -469,26 +545,147 @@ function vesselInfoModal(voy){
       closeModal();twinDirty=true;render();};};}
 function toLocal(t){const d=new Date(t);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,16);}
 
-/* ============================== AUTH ============================== */
-setTimeout(()=>show('login'),1800);
+/* ============================== AUTH ==============================
+   Two modes, and the login screen says which one it is in.
+
+   Server mode — a PortVision server is reachable. The code is generated,
+   hashed and checked on the server, and the ROLE COMES FROM THE ACCOUNT. The
+   three role cards are hidden, because a role you pick for yourself is not a
+   permission, it is a preference.
+
+   Standalone — no server. There is nobody to authenticate against, so this is
+   a local demo on this device: the role picker stays and the code is the demo
+   literal. It is labelled as such rather than dressed up as a login. */
+
 let selRole=null;
+let bootDone=false;
+
+function authMode(){return dbMode==='postgres'&&authRequired?'server':'standalone';}
+
+/* Restore a previous session, or show the login screen. */
+async function boot(){
+  if(bootDone)return;bootDone=true;
+  if(authMode()==='server'&&session&&session.refreshToken){
+    try{
+      const r=await refreshSession();
+      await enterApp(r.user);
+      return;
+    }catch(e){saveSession(null);}
+  }
+  paintLogin();
+  show('login');
+}
+setTimeout(boot,1800);
+
+/* The login screen is rebuilt from whichever mode is actually in force. */
+function paintLogin(){
+  const server=authMode()==='server';
+  const roleRow=$('#loginRoleRow'),note=$('#loginNote');
+  if(roleRow)roleRow.style.display=server?'none':'flex';
+  if(note){
+    note.className='demoTag';
+    note.innerHTML=server
+      ? 'Sign in with your registered mobile number. Your role is set by your administrator.'
+      : '<b>Local demo — not a login.</b> No PortVision server is reachable, so there is nothing to '
+        +'authenticate against and data stays on this device. Demo code <b>123456</b>. '
+        +'Tap the storage badge after signing in to point the app at a server.';
+  }
+  if(!server&&!selRole){
+    const first=document.querySelector('.roleCard');
+    if(first){first.classList.add('sel');selRole=first.dataset.role;}
+  }
+  checkLogin();
+}
+
 document.querySelectorAll('.roleCard').forEach(b=>b.onclick=()=>{document.querySelectorAll('.roleCard').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');selRole=b.dataset.role;checkLogin();});
 $('#mobile').oninput=e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,10);checkLogin();};
-function checkLogin(){$('#sendOtp').disabled=!(selRole&&$('#mobile').value.length===10);}
-$('#sendOtp').onclick=()=>{$('#otpHint').textContent='Enter the 6-digit code sent to +91 '+$('#mobile').value;show('otp');$('#otpRow input').focus();};
+function checkLogin(){
+  const ok=$('#mobile').value.length===10&&(authMode()==='server'||selRole);
+  $('#sendOtp').disabled=!ok;
+}
+
+$('#sendOtp').onclick=async()=>{
+  const mobile=$('#mobile').value;
+  const btn=$('#sendOtp');
+  if(authMode()==='server'){
+    btn.disabled=true;btn.textContent='Sending…';
+    try{
+      await rawApi('/auth/request-otp',{method:'POST',body:JSON.stringify({mobile})});
+      /* Deliberately the same message whether or not the number has an account —
+         a different one here would let anyone test which numbers are registered. */
+      $('#otpHint').textContent='If '+mobile+' has an account, a 6-digit code has been sent to it.';
+      show('otp');$('#otpRow input').focus();
+    }catch(e){
+      toast(e.message||'Could not send the code',true);
+    }finally{btn.disabled=false;btn.textContent='Send OTP';checkLogin();}
+    return;
+  }
+  $('#otpHint').textContent='Demo mode — enter 123456.';
+  show('otp');$('#otpRow input').focus();
+};
+
 document.querySelectorAll('#otpRow input').forEach((inp,i,arr)=>{
   inp.oninput=()=>{inp.value=inp.value.replace(/\D/g,'');if(inp.value&&i<5)arr[i+1].focus();};
   inp.onkeydown=e=>{if(e.key==='Backspace'&&!inp.value&&i>0)arr[i-1].focus();};
 });
-$('#backLogin').onclick=()=>show('login');
-$('#verifyOtp').onclick=()=>{
+$('#backLogin').onclick=()=>{clearOtpBoxes();show('login');};
+const clearOtpBoxes=()=>document.querySelectorAll('#otpRow input').forEach(i=>i.value='');
+
+$('#verifyOtp').onclick=async()=>{
   const code=[...document.querySelectorAll('#otpRow input')].map(i=>i.value).join('');
-  if(code!=='123456'){toast('Invalid OTP. Demo mode: use 123456',true);return;}
-  user={role:selRole,mobile:$('#mobile').value};
-  $('#uRole').textContent=user.role;$('#uMob').textContent='+91 '+user.mobile;
-  buildNav();show('app');go('dashboard');updateBell();logAudit('Logged in');
+  const btn=$('#verifyOtp');
+  if(authMode()==='server'){
+    btn.disabled=true;btn.textContent='Verifying…';
+    try{
+      const r=await rawApi('/auth/verify-otp',{method:'POST',
+        body:JSON.stringify({mobile:$('#mobile').value,code})});
+      saveSession({accessToken:r.accessToken,refreshToken:r.refreshToken,user:r.user});
+      clearOtpBoxes();
+      await enterApp(r.user);
+    }catch(e){
+      toast(e.message||'That code is not valid',true);
+      clearOtpBoxes();$('#otpRow input').focus();
+    }finally{btn.disabled=false;btn.textContent='Verify & Enter';}
+    return;
+  }
+  if(code!=='123456'){toast('Invalid code. Local demo: use 123456',true);return;}
+  clearOtpBoxes();
+  await enterApp({role:selRole,mobile:$('#mobile').value,name:null});
 };
-$('#logout').onclick=()=>{setNav(false);user=null;document.querySelectorAll('#otpRow input').forEach(i=>i.value='');show('login');};
+
+/* One way in, whichever mode signed the operator in. */
+async function enterApp(u){
+  user={role:u.role,mobile:u.mobile,name:u.name||null};
+  $('#uRole').textContent=user.role;
+  $('#uMob').textContent='+91 '+user.mobile;
+  if(dbMode==='postgres'){
+    try{await loadServerData();}
+    catch(e){toast('Signed in, but could not load data: '+e.message,true);}
+  }
+  buildNav();show('app');go('dashboard');updateBell();
+  logAudit('Signed in as '+user.role);
+}
+
+/* Ends the session on the server too, so the refresh token cannot be reused. */
+async function signOut(){
+  setNav(false);
+  const s=session;
+  saveSession(null);
+  user=null;selRole=null;
+  clearOtpBoxes();
+  voyages.splice(0,voyages.length);
+  if(s&&s.refreshToken){
+    try{await rawApi('/auth/logout',{method:'POST',body:JSON.stringify({refreshToken:s.refreshToken})});}
+    catch(e){/* already gone server-side, or offline — the local copy is cleared regardless */}
+  }
+  if(dbMode!=='postgres')loadLocalData();
+  paintLogin();show('login');
+}
+function forceSignOut(msg){
+  if(msg)toast(msg,true);
+  signOut();
+}
+$('#logout').onclick=()=>signOut();
 $('#bellBtn').onclick=()=>go('notifications');
 $('#dbBadge').onclick=()=>serverModal();
 $('#dbBadge').style.cursor='pointer';

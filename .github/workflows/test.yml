@@ -10,6 +10,26 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    # The authentication suite drives a real server against a real database,
+    # because what it checks is what a determined client could do to the API.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: portvision
+          POSTGRES_PASSWORD: portvision
+          POSTGRES_DB: portvision
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgres://portvision:portvision@localhost:5432/portvision
+
     steps:
       - uses: actions/checkout@v4
 
@@ -23,12 +43,30 @@ jobs:
           node --check www/sw.js
           node --check www/pwa.js
           node -e "JSON.parse(require('fs').readFileSync('capacitor.config.json','utf8'))"
+          node --check server/server.js
+          node --check server/auth.js
+          node --check server/manage-users.js
           node -e "JSON.parse(require('fs').readFileSync('www/manifest.webmanifest','utf8'))"
 
       - name: Install dependencies
         run: |
           npm install
+          npm install --prefix server
           npx playwright install --with-deps chromium
+
+      - name: Create the database schema
+        run: psql "$DATABASE_URL" -f server/schema.sql
+
+      - name: Run authentication checks
+        run: node tests/test_auth.js | tee auth.txt
+
+      - name: Fail if the authentication checks reported errors
+        run: |
+          if grep -q "ERRORS: none" auth.txt; then
+            echo "Authentication and role enforcement verified."
+          else
+            echo "Authentication checks reported errors:"; tail -10 auth.txt; exit 1
+          fi
 
       - name: Run regression suite
         run: node tests/test_app.js | tee result.txt

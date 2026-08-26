@@ -46,6 +46,11 @@ const launch = env => electron.launch({
   env: { ...process.env, ...env },
 });
 
+/* The app probes http://localhost:4000 for a PortVision server. These scenarios
+   are about the desktop shell, not about a server someone may happen to be
+   running, so that origin is blocked and the result is the same either way. */
+const isolate = page => page.route('http://localhost:4000/**', r => r.abort());
+
 async function login(page) {
   await page.click('.roleCard[data-role="Vessel Planner"]');
   await page.fill('#mobile', '9840012345');
@@ -70,6 +75,7 @@ async function login(page) {
   console.log('\n--- no DATABASE_URL ---');
   let app = await launch({ DATABASE_URL: '' });
   let page = await app.firstWindow();
+  await isolate(page);
   page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message));
   await page.waitForLoadState('domcontentloaded');
   await page.waitForTimeout(2200);
@@ -128,6 +134,7 @@ async function login(page) {
   console.log('\n--- DATABASE_URL set, nothing listening ---');
   app = await launch({ DATABASE_URL: 'postgres://nobody:nobody@127.0.0.1:1/portvision_absent' });
   page = await app.firstWindow();
+  await isolate(page);
   page.on('pageerror', e => errors.push('PAGEERROR (db): ' + e.message));
   await page.waitForLoadState('domcontentloaded');
   await page.waitForTimeout(3200);

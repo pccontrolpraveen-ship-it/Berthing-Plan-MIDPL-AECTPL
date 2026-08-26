@@ -18,6 +18,7 @@
  */
 const { app, BrowserWindow, Menu, shell, dialog } = require('electron');
 const path = require('path');
+const crypto = require('crypto');
 const fs = require('fs');
 const http = require('http');
 const { fork } = require('child_process');
@@ -56,6 +57,32 @@ const configPath = () => path.join(app.getPath('userData'), 'config.json');
 function readConfig() {
   try { return JSON.parse(fs.readFileSync(configPath(), 'utf8')); }
   catch (e) { return {}; }
+}
+
+function writeConfig(cfg) {
+  try {
+    fs.mkdirSync(path.dirname(configPath()), { recursive: true });
+    fs.writeFileSync(configPath(), JSON.stringify(cfg, null, 2), { mode: 0o600 });
+    return true;
+  } catch (e) {
+    console.warn('PORTVISION: could not write config:', e.message);
+    return false;
+  }
+}
+
+/* server.js refuses to start without a signing key, deliberately — a shipped
+   default would be shared by every install while looking like security. A
+   desktop install has one operator and no administrator to invent one, so
+   generate a key per install and keep it beside the database URL, readable only
+   by this user. Losing it signs everyone out, which is the correct consequence. */
+function jwtSecret() {
+  const env = process.env.PORTVISION_JWT_SECRET;
+  if (env && env.length >= 32) return env;
+  const cfg = readConfig();
+  if (cfg.jwtSecret && cfg.jwtSecret.length >= 32) return cfg.jwtSecret;
+  const secret = crypto.randomBytes(48).toString('base64url');
+  writeConfig({ ...cfg, jwtSecret: secret });
+  return secret;
 }
 
 function databaseUrl() {
@@ -108,8 +135,8 @@ function startBackend() {
     /* Port 0 lets the OS choose, so a desktop install never collides with a
        server the operator is already running on 4000. */
     const child = fork(SERVER_ENTRY, [], {
-      /* HOST pins the API to loopback: it has no authentication, and in a
-         desktop install it is a private component of this one machine.
+      /* HOST pins the API to loopback: in a desktop install it is a private
+         component of this one machine, not something other hosts should reach.
          NODE_PATH is required because server/ and node_modules/ are siblings
          rather than nested, so ordinary upward resolution from server.js never
          reaches express — true both in development (desktop/node_modules) and
@@ -117,6 +144,7 @@ function startBackend() {
       env: {
         ...process.env,
         DATABASE_URL: url,
+        PORTVISION_JWT_SECRET: jwtSecret(),
         PORT: '0',
         HOST: '127.0.0.1',
         NODE_PATH: path.join(ROOT, 'node_modules'),

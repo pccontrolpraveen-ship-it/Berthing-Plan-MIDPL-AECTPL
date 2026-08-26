@@ -15,11 +15,40 @@
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
+const { makeAuth, jwtSecret } = require('./auth');
+
+/* Fail at startup, not at the first login, if the signing key is missing. */
+jwtSecret();
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const app = express();
-app.use(cors());
+
+/* CORS used to be wide open. The browser build is served from a different
+   origin than the API, so cross-origin requests are legitimate — but the set of
+   origins is small and known, so it is configured rather than assumed.
+   PORTVISION_ALLOWED_ORIGINS is a comma-separated list; packaged builds send
+   capacitor://localhost, https://localhost (Android) or no Origin at all
+   (Electron loads from file:), which is why a missing Origin is allowed. */
+const ALLOWED = (process.env.PORTVISION_ALLOWED_ORIGINS || '')
+  .split(',').map(s => s.trim()).filter(Boolean);
+app.use(cors({
+  origin(origin, cb) {
+    if (!origin) return cb(null, true);                    // native shells, curl
+    if (!ALLOWED.length) return cb(null, true);            // unset: keep dev usable
+    cb(null, ALLOWED.includes(origin));
+  },
+  credentials: false,
+}));
 app.use(express.json({ limit: '4mb' }));
+
+const auth = makeAuth(pool);
+auth.mount(app);
+const { requireAuth, requireRole } = auth;
+
+/* Who may do what. Managers read; Planners and Admins write. Previously every
+   endpoint was open to anyone who could reach the port. */
+const canRead = [requireAuth];
+const canPlan = [requireAuth, requireRole('Vessel Planner', 'Admin')];
 
 const VESSEL_TYPES = ['Container', 'Liquid', 'Bulk', 'Break-Bulk'];
 const PORT_BERTHS = { KTP: ['CB1', 'CB2', 'B3'], ENN: ['EB1'] };
@@ -73,12 +102,12 @@ app.get('/api/health', async (_req, res) => {
   catch (e) { res.status(500).json({ error: 'database unreachable: ' + e.message }); }
 });
 
-app.get('/api/vessels', async (_req, res) => {
+app.get('/api/vessels', canRead, async (_req, res) => {
   try { const r = await pool.query('SELECT * FROM vessels ORDER BY name'); res.json(r.rows.map(vesselOut)); }
   catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-app.post('/api/vessels', async (req, res) => {
+app.post('/api/vessels', canPlan, async (req, res) => {
   const err = vesselError(req.body);
   if (err) return res.status(400).json({ error: err });
   const v = vesselRow(req.body);
@@ -98,7 +127,7 @@ app.post('/api/vessels', async (req, res) => {
   } finally { client.release(); }
 });
 
-app.put('/api/vessels/:id', async (req, res) => {
+app.put('/api/vessels/:id', canPlan, async (req, res) => {
   const err = vesselError(req.body);
   if (err) return res.status(400).json({ error: err });
   const v = vesselRow({ ...req.body, id: req.params.id });
@@ -113,7 +142,7 @@ app.put('/api/vessels/:id', async (req, res) => {
 });
 
 /* one-time seed of the built-in vessel master when the table is empty */
-app.post('/api/vessels/seed', async (req, res) => {
+app.post('/api/vessels/seed', canPlan, async (req, res) => {
   if (!Array.isArray(req.body)) return res.status(400).json({ error: 'array expected' });
   const client = await pool.connect();
   try {
@@ -135,7 +164,7 @@ app.post('/api/vessels/seed', async (req, res) => {
   finally { client.release(); }
 });
 
-app.get('/api/voyages', async (req, res) => {
+app.get('/api/voyages', canRead, async (req, res) => {
   try {
     const r = req.query.port
       ? await pool.query('SELECT payload FROM voyages WHERE port_id=$1', [req.query.port])
@@ -145,7 +174,7 @@ app.get('/api/voyages', async (req, res) => {
 });
 
 /* bulk upsert of the full voyage state in ONE transaction */
-app.put('/api/state', async (req, res) => {
+app.put('/api/state', canPlan, async (req, res) => {
   const voys = (req.body && req.body.voyages) || [];
   for (const v of voys) {
     const err = voyageError(v);

@@ -56,6 +56,10 @@ const server = http.createServer((req, res) => {
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const page = await context.newPage();
   page.on('pageerror', e => errors.push('PAGEERROR: ' + e.message));
+  /* The app probes http://localhost:4000 for a PortVision server. This suite
+     covers standalone behaviour, so block that origin outright — otherwise the
+     result depends on whether a developer happens to have the server running. */
+  await page.route('http://localhost:4000/**', r => r.abort());
 
   /* ---- P1. Manifest is linked, served and complete ---- */
   await page.goto(base);

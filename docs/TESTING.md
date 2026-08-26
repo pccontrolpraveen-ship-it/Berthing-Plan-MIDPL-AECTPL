@@ -13,6 +13,7 @@ node tests/test_app.js         # application regression suite
 node tests/test_pwa.js         # manifest, service worker, offline launch
 node tests/test_responsive.js  # phone / tablet / desktop layout, touch targets
 node tests/test_mobile.js      # Capacitor native web view behaviour
+DATABASE_URL=postgres://… node tests/test_auth.js   # authentication + roles
 node tests/test_desktop.js     # Electron desktop build
 ```
 

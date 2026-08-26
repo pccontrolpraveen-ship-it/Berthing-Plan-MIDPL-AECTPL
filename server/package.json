@@ -1,15 +1,17 @@
 {
   "name": "portvision-server",
-  "version": "2.4.0",
+  "version": "2.10.0",
   "description": "PORTVISION 3D persistence API - Express + PostgreSQL",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "init-db": "psql \"$DATABASE_URL\" -f schema.sql"
+    "init-db": "psql \"$DATABASE_URL\" -f schema.sql",
+    "users": "node manage-users.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
     "express": "^4.19.0",
+    "jsonwebtoken": "^9.0.3",
     "pg": "^8.12.0"
   }
 }

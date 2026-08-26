@@ -139,7 +139,7 @@ let browser;
 
   await upgrade.addInitScript(CAPACITOR_BRIDGE);   // now it is a packaged build
   await upage.reload();
-  await upage.waitForTimeout(2000);
+  await upage.waitForTimeout(3000);
   const after = await upage.evaluate(async () => ({
     regs: (await navigator.serviceWorker.getRegistrations()).length,
     caches: (await caches.keys()).length,
@@ -153,6 +153,7 @@ let browser;
   await native.addInitScript(CAPACITOR_BRIDGE);
   const page = await native.newPage();
   page.on('pageerror', e => errors.push('PAGEERROR (native): ' + e.message));
+  await page.route('http://localhost:4000/**', r => r.abort());
   await page.goto(base);
   await page.waitForTimeout(1800);
 
@@ -219,6 +220,7 @@ let browser;
   const web = await browser.newContext({ viewport: { width: 1440, height: 900 } });
   const wpage = await web.newPage();
   wpage.on('pageerror', e => errors.push('PAGEERROR (web): ' + e.message));
+  await wpage.route('http://localhost:4000/**', r => r.abort());
   await wpage.goto(base);
   await wpage.waitForTimeout(1800);
   ok('M5.1 no native bridge is assumed in a browser',

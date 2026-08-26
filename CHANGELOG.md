@@ -4,6 +4,37 @@ All notable changes to PORTVISION 3D. Format loosely follows [Keep a Changelog](
 
 ---
 
+## [2.10] — 2026-08-26
+
+### Added — real authentication (ROADMAP step 3)
+The prototype's login was a prop: the browser compared the entered code against the literal `'123456'`, the operator chose their own role from three cards, and the API accepted any request that reached the port. Two facts replaced it, and everything else follows — **the code is generated, hashed and verified on the server**, and **the role is read from the `users` table** rather than claimed by the browser. See `docs/AUTH.md`.
+
+- **One-time codes** from a CSPRNG, stored only as a salted scrypt hash, valid 5 minutes, single-use, burned in the same statement that redeems them so two concurrent requests cannot both win. Five wrong attempts kills the challenge; five requests per number per quarter hour caps both brute force and the SMS bill. The code is never in an HTTP response under any transport.
+- **No user enumeration** — `request-otp` answers identically whether or not the number has an account, so the endpoint cannot be used to discover which staff numbers are registered.
+- **JWT access tokens** (short-lived, never stored) and **opaque refresh tokens** (stored only as SHA-256, rotated on every use, so a stolen copy stops working as soon as the real client refreshes).
+- **Role guards on every endpoint.** Managers read; Vessel Planners and Admins write. A refused action returns a 403 naming the role actually held rather than failing silently. Only `/api/health` and the auth endpoints are public.
+- **`PORTVISION_JWT_SECRET` is mandatory** and must be at least 32 characters; the server refuses to start otherwise. There is deliberately no built-in default — a shipped signing key would be shared by every deployment while looking like security.
+- **Pluggable OTP delivery** (`log` for development, `webhook` for an SMS gateway, `none` which refuses to deliver rather than pretending to). A misconfigured deployment fails visibly.
+- **`server/manage-users.js`** for account administration. There is no self-registration: who may edit a berthing plan is a decision for the terminal. Changing a role or disabling an account **revokes live sessions**, because an access token already issued carries the old role until it expires.
+- **`auth_events`** records sign-ins, failures and refusals server-side, where the client cannot edit them.
+- **CORS is now configured** via `PORTVISION_ALLOWED_ORIGINS` instead of open to everything. A missing `Origin` is still allowed, because packaged builds legitimately send none.
+
+### Changed
+- **The login screen states which mode it is in.** With a server reachable, the role cards are hidden and it says the role is set by your administrator. With no server it says plainly: *"Local demo — not a login."* Standalone is not a weaker login, it is no login, and it is labelled that way rather than dressed up.
+- The client attaches the access token to every API call, refreshes **once** on a 401 and retries, and on a second failure ends the session with an explanation rather than silently dropping the operator's edits. Signing out revokes the refresh token on the server, not just locally.
+- Vessels and voyages load **after** sign-in rather than at startup, since they now require a token.
+- Added an `esc()` helper and used it for values interpolated into `innerHTML`; tokens live in browser storage, so escaping is what makes that acceptable.
+
+### Fixed
+- **The existing suites silently depended on nothing listening on port 4000.** With a PortVision server running locally they would have switched to server mode and failed. They now block that origin explicitly, so standalone behaviour is tested deterministically either way.
+
+### Tests
+- New suite `tests/test_auth.js` (46 checks) starts a real server against a real PostgreSQL and drives it over HTTP, because what is being tested is exactly what a determined client could do to the API. Covers: refusal to start without a secret or with a weak one; every endpoint rejecting unauthenticated access; no enumeration; codes absent from responses; wrong codes, replay, brute-force lockout, request rate limiting; tampered, `alg:none` and wrong-key tokens; Manager read-only versus Planner/Admin write; refresh rotation and reuse detection; sign-out; disable and role change taking effect on live sessions; hashes at rest; and the browser signing in for real and showing the **server-assigned** role.
+- CI gained a `postgres:16` service container and runs the suite as a sixth release gate.
+- All six suites: ERRORS: none.
+
+---
+
 ## [2.9] — 2026-08-24
 
 ### Added — iOS and Android builds (phase 4)

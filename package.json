@@ -1,7 +1,7 @@
 {
   "name": "portvision-3d",
   "productName": "PORTVISION 3D",
-  "version": "2.9.0",
+  "version": "2.10.0",
   "description": "Vessel berthing planning and port operations for MIDPL Kattupalli and AECTPL Ennore, with a live 3D digital twin.",
   "main": "desktop/main.js",
   "private": true,
@@ -23,7 +23,8 @@
     "mobile:sync": "npx cap sync",
     "mobile:android": "npx cap open android",
     "mobile:ios": "npx cap open ios",
-    "mobile:assets": "npx @capacitor/assets generate --iconBackgroundColor '#1F3864' --iconBackgroundColorDark '#14243F' --splashBackgroundColor '#14243F' --splashBackgroundColorDark '#14243F'"
+    "mobile:assets": "npx @capacitor/assets generate --iconBackgroundColor '#1F3864' --iconBackgroundColorDark '#14243F' --splashBackgroundColor '#14243F' --splashBackgroundColorDark '#14243F'",
+    "test:auth": "node tests/test_auth.js"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.0",

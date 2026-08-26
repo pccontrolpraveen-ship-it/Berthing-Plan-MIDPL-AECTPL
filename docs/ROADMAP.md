@@ -25,7 +25,7 @@ Each step ends with something demonstrable. All tooling and hosting used here ha
 | **0** | Install VS Code, Node.js LTS, Git; create the GitHub repository; create a free PostgreSQL database (Neon or Supabase) | Working environment |
 | **1** | Scaffold NestJS backend; add Prisma; apply the existing `schema.prisma`; run the first migration | 17 tables in a real database |
 | **2** | Seed reference data — berths CB1 350 m / CB2 357 m / B3 426 m, cranes QC01–QC08 in physical order, bollard pools (CB1 1–17, shared 1–34), vessel types, berth eligibility, cargo option lists | The terminal exists in data |
-| **3** | Auth module — OTP request/verify, JWT access and refresh, role guards for Planner / Manager / Admin | Login works from an API client |
+| **3** | ~~Auth module — OTP request/verify, JWT access and refresh, role guards for Planner / Manager / Admin~~ **Done in 2.10** — see `docs/AUTH.md` | Login works from an API client |
 | **4** | Vessels and voyages modules; one-time import of the vessel master from Excel; ETA capture with the Condition-1 clash check | Vessel calls created over the API |
 | **5** | **Berthing rules engine** — port `berthAllowed`, `dualCheck`, CB1 290 m rule, tentative berthing, ATB gate, bollard pools with CB1 validation and CB2/B3 free choice, berthing side | The rules that matter, server-side |
 | **6** | Milestones, cargo and cranes — unlock chain, hatch/bin capture at ATC, BMPH and GCR, crane exclusivity and the Break-Bulk waiver, cargo lines in MT | Complete vessel lifecycle |

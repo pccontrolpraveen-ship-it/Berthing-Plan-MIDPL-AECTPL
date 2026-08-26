@@ -21,12 +21,19 @@
      left by an earlier build is torn down along with its caches. */
   var cap = window.Capacitor;
   if (cap && typeof cap.isNativePlatform === 'function' && cap.isNativePlatform()) {
-    navigator.serviceWorker.getRegistrations().then(function (regs) {
-      regs.forEach(function (r) { r.unregister(); });
-      if (window.caches && caches.keys) {
-        caches.keys().then(function (keys) { keys.forEach(function (k) { caches.delete(k); }); });
-      }
-    }).catch(function () { /* nothing registered — nothing to undo */ });
+    /* Sequenced, not fired together: a cache still held open by an active worker
+       may refuse to go, so the worker is torn down first and its caches after. */
+    navigator.serviceWorker.getRegistrations()
+      .then(function (regs) {
+        return Promise.all(regs.map(function (r) { return r.unregister(); }));
+      })
+      .then(function () {
+        if (!(window.caches && caches.keys)) return null;
+        return caches.keys().then(function (keys) {
+          return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+        });
+      })
+      .catch(function () { /* nothing registered — nothing to undo */ });
     return;
   }
 

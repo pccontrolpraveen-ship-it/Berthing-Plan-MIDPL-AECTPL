@@ -120,6 +120,10 @@ const TOUCH_PROBE = () => {
     });
     const page = await context.newPage();
     page.on('pageerror', e => errors.push(`PAGEERROR (${vp.name}): ${e.message}`));
+      /* Standalone behaviour: block the default API origin so the result does
+         not depend on whether a server happens to be running locally. */
+      await page.route('http://localhost:4000/**', r => r.abort());
+
     await page.goto(APP);
     await page.waitForTimeout(1800);
 

@@ -76,6 +76,10 @@ Reopen `www/index.html` — the badge switches to **🗄 PostgreSQL** and every 
 | `tests/test_pwa.js` | Manifest, service worker and offline-launch checks |
 | `tests/test_responsive.js` | Phone, tablet and desktop layout plus touch-target checks |
 | `tests/test_mobile.js` | Capacitor native-web-view behaviour checks |
+| `tests/test_auth.js` | Authentication and role-enforcement checks (needs PostgreSQL) |
+| `server/auth.js` | OTP, JWT and role guards |
+| `server/manage-users.js` | Account administration CLI |
+| [`docs/AUTH.md`](docs/AUTH.md) | How authentication works and how to run it |
 | `android/`, `ios/` | Capacitor native projects — see [`docs/MOBILE.md`](docs/MOBILE.md) |
 | `capacitor.config.json` | Mobile build configuration |
 | `assets/` | Icon and splash sources for the native builds |
