@@ -19,6 +19,13 @@ const WWW = path.join(ROOT, 'www');
 const OUT_DIR = path.join(ROOT, 'dist');
 const OUT = path.join(OUT_DIR, 'portvision-3d-standalone.html');
 
+/* --artifact additionally writes a variant for a host that supplies its own
+   document skeleton, so the fragment carries no <html>, <head> or <body> of its
+   own — nested ones would be dropped by the parser and take the app's layout
+   with them. */
+const ARTIFACT = process.argv.includes('--artifact');
+const OUT_ARTIFACT = path.join(OUT_DIR, 'portvision-3d-artifact.html');
+
 const read = f => fs.readFileSync(path.join(WWW, f), 'utf8');
 
 /* A literal </script> anywhere inside inlined JavaScript would close the tag
@@ -63,6 +70,37 @@ html = html.replace('<head>',
 
 fs.mkdirSync(OUT_DIR, { recursive: true });
 fs.writeFileSync(OUT, html);
+
+if (ARTIFACT) {
+  /* Strip the document wrapper. The title survives as a bare element — the host
+     reads it for the tab and gallery name — and the stylesheet keeps painting
+     body itself, so the application still owns the viewport. */
+  let frag = html
+    .replace(/<!DOCTYPE[^>]*>\s*/i, '')
+    .replace(/<html[^>]*>\s*/i, '').replace(/<\/html>\s*/i, '')
+    .replace(/<head>\s*/i, '').replace(/<\/head>\s*/i, '')
+    .replace(/<body[^>]*>\s*/i, '').replace(/<\/body>\s*/i, '')
+    .replace(/<meta[^>]*>\s*/gi, '')
+    .replace(/<link rel="icon"[^>]*>\s*/i, '');
+
+  /* The host scans only the first 8 KB for a title, and the inlined Three.js is
+     600 KB, so the title has to lead. */
+  frag = frag.replace(/<title>[^<]*<\/title>\s*/i, '');
+  frag = '<title>PORTVISION 3D</title>\n' + frag;
+
+  fs.mkdirSync(OUT_DIR, { recursive: true });
+  fs.writeFileSync(OUT_ARTIFACT, frag);
+
+  /* Check the markup only. app.js builds a printable report with
+     document.write('<html>…'), and that string is not a document wrapper. */
+  const markupOnly = frag
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '');
+  const bad = /<(!DOCTYPE|html|head|body)[\s>]/i.exec(markupOnly);
+  if (bad) throw new Error('document wrapper survived stripping: ' + bad[0]);
+  console.log('wrote', path.relative(ROOT, OUT_ARTIFACT), '—',
+    (Buffer.byteLength(frag) / 1024).toFixed(0) + ' KB (fragment)');
+}
 
 const kb = n => (n / 1024).toFixed(0) + ' KB';
 console.log('wrote', path.relative(ROOT, OUT), '—', kb(Buffer.byteLength(html)));
